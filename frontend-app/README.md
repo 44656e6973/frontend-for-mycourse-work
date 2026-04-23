@@ -1,73 +1,91 @@
-# React + TypeScript + Vite
+# IdeaBoard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Учебный фронтенд-проект на `React + TypeScript + Vite + Tailwind CSS`.
 
-Currently, two official plugins are available:
+Приложение представляет собой ленту идей и проектов с фильтрацией по категориям, поиском по названию и поиском по тэгам.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Что уже реализовано
 
-## React Compiler
+- адаптивный интерфейс в стиле idea board
+- поиск по названию проекта
+- поиск по тэгам
+- фильтрация по категориям
+- вертикальная прокрутка карточек
+- структура проекта, разделенная на компоненты, данные, типы и утилиты
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Технологии
 
-## Expanding the ESLint configuration
+- `React 19`
+- `TypeScript`
+- `Vite`
+- `Tailwind CSS 4`
+- `ESLint`
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Запуск проекта
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Установить зависимости:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Запустить проект в режиме разработки:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Собрать production-версию:
+
+```bash
+npm run build
+```
+
+Проверить код линтером:
+
+```bash
+npm run lint
+```
+
+Запустить локальный предпросмотр production-сборки:
+
+```bash
+npm run preview
+```
+
+## Структура папок
+
+```text
+src/
+  app/          # корневой компонент приложения
+  components/   # переиспользуемые UI-компоненты
+  data/         # моковые данные для карточек
+  styles/       # глобальные стили и Tailwind
+  types/        # TypeScript-типы
+  utils/        # вспомогательная логика, например фильтрация
+```
+
+## Основной функционал
+
+### Поиск по названию
+
+Поле поиска в шапке фильтрует карточки по названию проекта.
+
+### Поиск по тэгам
+
+Отдельное поле фильтрует карточки по списку тэгов.
+
+### Фильтрация по категориям
+
+Кнопки категорий позволяют быстро переключать отображаемые записи.
+
+### Пролистывание записей
+
+Карточки находятся в отдельной прокручиваемой области, поэтому список удобно листать даже при большом количестве записей.
+
+## Команды проекта
+
+- `npm run dev` — запуск dev-сервера
+- `npm run build` — production-сборка
+- `npm run lint` — проверка ESLint
+- `npm run preview` — просмотр production-сборки
