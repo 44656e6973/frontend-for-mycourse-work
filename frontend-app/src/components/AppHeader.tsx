@@ -23,9 +23,7 @@ export function AppHeader({ titleQuery, onTitleQueryChange }: AppHeaderProps) {
             <p className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-slate-950">
               IdeaBoard
             </p>
-            <p className="text-sm text-slate-500">
-              Подборка концептов для команды и клиентов
-            </p>
+        
           </div>
         </div>
 
