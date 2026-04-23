@@ -56,8 +56,6 @@ function App() {
           />
           <IdeaFeed
             ideas={filteredIdeas}
-            titleQuery={titleQuery}
-            tagQuery={tagQuery}
             activeCategory={activeCategory}
           />
         </main>
