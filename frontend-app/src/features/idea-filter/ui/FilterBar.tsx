@@ -1,6 +1,6 @@
 import { type ChangeEvent } from 'react'
 
-import { type FilterCategory } from '../types/idea'
+import { type FilterCategory } from '../../../entities/idea'
 
 type FilterBarProps = {
   categories: FilterCategory[]

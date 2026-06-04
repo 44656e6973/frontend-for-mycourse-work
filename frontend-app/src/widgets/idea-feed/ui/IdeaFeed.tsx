@@ -1,12 +1,29 @@
-import { IdeaCard } from './IdeaCard'
-import { type FilterCategory, type Idea } from '../types/idea'
+import { IdeaCard, type FilterCategory, type Idea } from '../../../entities/idea'
 
 type IdeaFeedProps = {
   ideas: Idea[]
   activeCategory: FilterCategory
+  isLoading: boolean
+  errorMessage: string | null
 }
 
-export function IdeaFeed({ ideas, activeCategory }: IdeaFeedProps) {
+type FeedStateProps = {
+  title: string
+  description: string
+}
+
+function FeedState({ title, description }: FeedStateProps) {
+  return (
+    <div className="flex h-[24rem] flex-col items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white/85 px-6 text-center">
+      <p className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+        {title}
+      </p>
+      <p className="mt-3 max-w-md text-sm leading-7 text-slate-500">{description}</p>
+    </div>
+  )
+}
+
+export function IdeaFeed({ ideas, activeCategory, isLoading, errorMessage }: IdeaFeedProps) {
   return (
     <section className="space-y-4">
       <div className="space-y-4">
@@ -34,7 +51,17 @@ export function IdeaFeed({ ideas, activeCategory }: IdeaFeedProps) {
           </div>
         </div>
 
-        {ideas.length > 0 ? (
+        {isLoading ? (
+          <FeedState
+            title="Загружаем идеи"
+            description="Сейчас получаем список проектов."
+          />
+        ) : errorMessage ? (
+          <FeedState
+            title="Ошибка загрузки"
+            description={errorMessage}
+          />
+        ) : ideas.length > 0 ? (
           <div className="hide-scrollbar h-[min(68vh,52rem)] snap-y snap-proximity space-y-5 overflow-y-auto pr-1 sm:pr-2">
             {ideas.map((idea) => (
               <IdeaCard key={idea.id} idea={idea} />

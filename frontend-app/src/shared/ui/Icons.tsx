@@ -60,3 +60,39 @@ export function CommentIcon(props: IconProps) {
     </svg>
   )
 }
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 6.75 10.5 10.5M17.25 6.75l-10.5 10.5" />
+    </svg>
+  )
+}
+
+export function MailIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <rect width="16.5" height="12.5" x="3.75" y="5.75" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m5.25 8.25 5.67 4.25a1.8 1.8 0 0 0 2.16 0l5.67-4.25" />
+    </svg>
+  )
+}
+
+export function LockIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <rect width="14.5" height="10.5" x="4.75" y="10" rx="2" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 10V7.75a3.75 3.75 0 0 1 7.5 0V10" />
+      <path strokeLinecap="round" d="M12 14.25v2" />
+    </svg>
+  )
+}
+
+export function UserIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <circle cx="12" cy="8.5" r="3.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.75 19.25a6.25 6.25 0 0 1 12.5 0" />
+    </svg>
+  )
+}

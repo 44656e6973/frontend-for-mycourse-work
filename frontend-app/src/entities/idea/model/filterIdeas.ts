@@ -1,4 +1,4 @@
-import { type FilterCategory, type Idea } from '../types/idea'
+import { type FilterCategory, type Idea } from './types'
 
 type FilterIdeasOptions = {
   ideas: Idea[]

@@ -1,13 +1,23 @@
 import { type ChangeEvent } from 'react'
 
-import { BellIcon, BrandIcon, SearchIcon } from './Icons'
+import { type User } from '../../../entities/user'
+import { BrandIcon, SearchIcon, UserIcon } from '../../../shared/ui/Icons'
 
 type AppHeaderProps = {
   titleQuery: string
+  currentUser: User | null
   onTitleQueryChange: (value: string) => void
+  onAuthClick: () => void
 }
 
-export function AppHeader({ titleQuery, onTitleQueryChange }: AppHeaderProps) {
+export function AppHeader({
+  titleQuery,
+  currentUser,
+  onTitleQueryChange,
+  onAuthClick,
+}: AppHeaderProps) {
+  const userInitial = currentUser?.username.trim().charAt(0).toLocaleUpperCase('ru-RU')
+
   const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
     onTitleQueryChange(event.target.value)
   }
@@ -19,12 +29,9 @@ export function AppHeader({ titleQuery, onTitleQueryChange }: AppHeaderProps) {
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ff8dc4_0%,#a42bfd_100%)] shadow-[0_18px_36px_-20px_rgba(168,43,253,0.95)]">
             <BrandIcon className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <p className="font-display text-[1.35rem] font-semibold tracking-[-0.03em] text-slate-950">
-              IdeaBoard
-            </p>
-        
-          </div>
+          <p className="font-display text-[1.35rem] font-semibold text-slate-950">
+            IdeaBoard
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -39,17 +46,30 @@ export function AppHeader({ titleQuery, onTitleQueryChange }: AppHeaderProps) {
             />
           </label>
 
-          <div className="flex items-center justify-between gap-3 sm:justify-end">
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 transition hover:-translate-y-0.5 hover:text-slate-950"
-              aria-label="Уведомления"
-            >
-              <BellIcon className="h-5 w-5" />
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+            {currentUser ? (
+              <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-semibold text-white">
+                  {userInitial || <UserIcon className="h-4 w-4" />}
+                </span>
+                <span className="max-w-[10rem] truncate text-sm font-semibold text-slate-900">
+                  {currentUser.username}
+                </span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onAuthClick}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:-translate-y-0.5 hover:text-slate-950"
+              >
+                <UserIcon className="h-5 w-5" />
+                Войти
+              </button>
+            )}
 
             <button
               type="button"
+              onClick={currentUser ? undefined : onAuthClick}
               className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
             >
               Создать

@@ -1,5 +1,5 @@
-import { CommentIcon, HeartIcon } from './Icons'
-import { type Idea } from '../types/idea'
+import { CommentIcon, HeartIcon } from '../../../shared/ui/Icons'
+import { type Idea } from '../model/types'
 
 type IdeaCardProps = {
   idea: Idea
