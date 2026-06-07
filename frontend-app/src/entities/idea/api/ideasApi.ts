@@ -5,22 +5,34 @@ import { type CreateIdeaPayload, type Idea, type IdeaCategory, type Tag } from '
 
 type IdeaApiTag = string | number | { id?: string | number; name?: string; title?: string }
 type TagsApiResponse = IdeaApiTag[] | { results?: IdeaApiTag[]; data?: IdeaApiTag[] }
+type IdeasApiResponse = IdeaApiRecord[] | { results?: IdeaApiRecord[]; data?: IdeaApiRecord[] }
 
 type IdeaApiRecord = Partial<{
   id: string | number
   title: string
+  previewTitle: string
   description: string
+  category: IdeaCategory
   status: string
+  stage: string
+  coverLabel: string
+  cover: string
   cover_image_URL: string | null
   cover_image_url: string | null
+  image: string | null
+  image_url: string | null
   likes_count: number
+  likes: number
   comments_count: number
+  comments: number
   author: User | string | number
+  role: string
   tags: IdeaApiTag[]
 }>
 
 const FALLBACK_CATEGORY: IdeaCategory = 'UI/UX'
 const DEFAULT_CREATED_IDEA_STATUS = 'draft'
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? ''
 
 function getStatusLabel(status: string | undefined) {
   switch (status) {
@@ -33,11 +45,43 @@ function getStatusLabel(status: string | undefined) {
   }
 }
 
+function getApiOrigin() {
+  if (!API_BASE_URL) {
+    return window.location.origin
+  }
+
+  try {
+    return new URL(API_BASE_URL).origin
+  } catch {
+    return window.location.origin
+  }
+}
+
+function normalizeMediaUrl(url: string | null | undefined) {
+  const trimmedUrl = url?.trim()
+
+  if (!trimmedUrl) {
+    return ''
+  }
+
+  if (/^https?:\/\//i.test(trimmedUrl) || trimmedUrl.startsWith('data:')) {
+    return trimmedUrl
+  }
+
+  if (trimmedUrl.startsWith('/')) {
+    return `${getApiOrigin()}${trimmedUrl}`
+  }
+
+  return trimmedUrl
+}
+
 function getCoverBackground(coverImageUrl: string | null | undefined) {
-  if (coverImageUrl) {
+  const normalizedCoverImageUrl = normalizeMediaUrl(coverImageUrl)
+
+  if (normalizedCoverImageUrl) {
     return [
       'linear-gradient(135deg, rgba(15,23,42,0.34), rgba(2,6,23,0.58))',
-      `url(${JSON.stringify(coverImageUrl)}) center/cover no-repeat`,
+      `url(${JSON.stringify(normalizedCoverImageUrl)}) center/cover no-repeat`,
     ].join(', ')
   }
 
@@ -105,7 +149,17 @@ function normalizeAuthor(apiAuthor: IdeaApiRecord['author'], fallbackAuthor: Use
   return fallbackAuthor
 }
 
-function normalizeCreatedIdea(
+function getCoverImageUrl(apiIdea: IdeaApiRecord, payload: CreateIdeaPayload) {
+  return (
+    apiIdea.cover_image_URL ??
+    apiIdea.cover_image_url ??
+    apiIdea.image_url ??
+    apiIdea.image ??
+    payload.cover_image_URL
+  )
+}
+
+function normalizeIdea(
   apiIdea: IdeaApiRecord,
   payload: CreateIdeaPayload,
   author: User,
@@ -113,24 +167,47 @@ function normalizeCreatedIdea(
 ): Idea {
   const title = apiIdea.title?.trim() || payload.title
   const description = apiIdea.description?.trim() || payload.description
-  const coverImageUrl = apiIdea.cover_image_URL ?? apiIdea.cover_image_url ?? payload.cover_image_URL
   const status = apiIdea.status ?? DEFAULT_CREATED_IDEA_STATUS
 
   return {
     id: String(apiIdea.id ?? globalThis.crypto?.randomUUID?.() ?? `idea-${Date.now()}`),
     title,
-    previewTitle: title,
+    previewTitle: apiIdea.previewTitle ?? title,
     description,
-    category: FALLBACK_CATEGORY,
+    category: apiIdea.category ?? FALLBACK_CATEGORY,
     tags: normalizeIdeaTags(apiIdea.tags, selectedTags),
     author: normalizeAuthor(apiIdea.author, author),
-    role: 'Автор идеи',
-    likes: apiIdea.likes_count ?? 0,
-    comments: apiIdea.comments_count ?? 0,
-    stage: getStatusLabel(status),
-    coverLabel: status,
-    cover: getCoverBackground(coverImageUrl),
+    role: apiIdea.role ?? 'Автор идеи',
+    likes: apiIdea.likes_count ?? apiIdea.likes ?? 0,
+    comments: apiIdea.comments_count ?? apiIdea.comments ?? 0,
+    stage: apiIdea.stage ?? getStatusLabel(status),
+    coverLabel: apiIdea.coverLabel ?? status,
+    cover: apiIdea.cover ?? getCoverBackground(getCoverImageUrl(apiIdea, payload)),
   }
+}
+
+function normalizeIdeasResponse(response: IdeasApiResponse): Idea[] {
+  const ideas = Array.isArray(response) ? response : response.results ?? response.data ?? []
+  const fallbackAuthor: User = {
+    id: 'api-author',
+    username: 'Автор идеи',
+    email: '',
+    avatar_URL: '',
+    created_at: new Date().toISOString(),
+  }
+
+  return ideas.map((idea) =>
+    normalizeIdea(
+      idea,
+      {
+        title: idea.title ?? '',
+        description: idea.description ?? '',
+        cover_image_URL: null,
+        tags: [],
+      },
+      fallbackAuthor,
+    ),
+  )
 }
 
 async function getLocalCreatedIdea(
@@ -142,7 +219,7 @@ async function getLocalCreatedIdea(
     window.setTimeout(resolve, 350)
   })
 
-  return normalizeCreatedIdea({}, payload, author, selectedTags)
+  return normalizeIdea({}, payload, author, selectedTags)
 }
 
 export const ideasApi = {
@@ -151,7 +228,7 @@ export const ideasApi = {
       return Promise.resolve(mockIdeas)
     }
 
-    return apiClient.get<Idea[]>('/v1/ideas')
+    return apiClient.get<IdeasApiResponse>('/v1/ideas').then(normalizeIdeasResponse)
   },
   getTags: async (): Promise<Tag[]> => {
     if (!apiClient.isConfigured) {
@@ -173,6 +250,6 @@ export const ideasApi = {
 
     const createdIdea = await apiClient.post<IdeaApiRecord>('/v1/ideas/', payload)
 
-    return normalizeCreatedIdea(createdIdea, payload, author, selectedTags)
+    return normalizeIdea(createdIdea, payload, author, selectedTags)
   },
 }
