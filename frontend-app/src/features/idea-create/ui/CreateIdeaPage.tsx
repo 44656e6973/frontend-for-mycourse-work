@@ -345,7 +345,7 @@ export function CreateIdeaPage({ currentUser, onBack, onCreateIdea }: CreateIdea
                   <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
                     Идея
                   </span>
-                  <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+                  <span className="hidden rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
                     Черновик
                   </span>
                 </div>

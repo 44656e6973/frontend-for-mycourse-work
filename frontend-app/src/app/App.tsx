@@ -1,7 +1,7 @@
 import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
 
 import { IDEA_CATEGORIES, filterIdeas, ideasApi } from '../entities/idea'
-import { type CreateIdeaPayload, type FilterCategory, type Idea } from '../entities/idea'
+import { type CreateIdeaPayload, type FilterCategory, type Idea, type IdeaComment } from '../entities/idea'
 import { type User, authApi } from '../entities/user'
 import { AuthModal } from '../features/auth'
 import { CreateIdeaPage } from '../features/idea-create'
@@ -208,6 +208,55 @@ function App() {
     setCurrentUser(updatedUser)
   }
 
+  const handleRequireAuth = () => {
+    setIsAuthModalOpen(true)
+  }
+
+  const handleToggleIdeaLike = async (idea: Idea) => {
+    if (!currentUser || !tokenStorage.hasTokens()) {
+      setIsAuthModalOpen(true)
+      throw new Error('Войдите, чтобы поставить лайк')
+    }
+
+    const likeState = await ideasApi.toggleIdeaLike(idea)
+
+    setIdeas((currentIdeas) =>
+      currentIdeas.map((currentIdea) =>
+        currentIdea.id === idea.id
+          ? {
+              ...currentIdea,
+              likes: likeState.likes,
+              isLikedByCurrentUser: likeState.isLikedByCurrentUser,
+            }
+          : currentIdea,
+      ),
+    )
+  }
+
+  const handleLoadIdeaComments = (ideaId: string) => ideasApi.getIdeaComments(ideaId)
+
+  const handleCreateIdeaComment = async (ideaId: string, text: string): Promise<IdeaComment> => {
+    if (!currentUser || !tokenStorage.hasTokens()) {
+      setIsAuthModalOpen(true)
+      throw new Error('Войдите, чтобы написать комментарий')
+    }
+
+    const createdComment = await ideasApi.createIdeaComment(ideaId, text, currentUser)
+
+    setIdeas((currentIdeas) =>
+      currentIdeas.map((currentIdea) =>
+        currentIdea.id === ideaId
+          ? {
+              ...currentIdea,
+              comments: currentIdea.comments + 1,
+            }
+          : currentIdea,
+      ),
+    )
+
+    return createdComment
+  }
+
   const handleCreateIdea = async (payload: CreateIdeaPayload, selectedTags: string[]) => {
     if (!currentUser || !tokenStorage.hasTokens()) {
       setIsAuthModalOpen(true)
@@ -286,6 +335,11 @@ function App() {
                 activeCategory={activeCategory}
                 isLoading={isIdeasLoading}
                 errorMessage={ideasError}
+                currentUser={currentUser}
+                onRequireAuth={handleRequireAuth}
+                onToggleLike={handleToggleIdeaLike}
+                onLoadComments={handleLoadIdeaComments}
+                onCreateComment={handleCreateIdeaComment}
               />
             </>
           )}

@@ -24,6 +24,7 @@ export const ideas: Idea[] = [
     role: 'Lead designer',
     likes: 342,
     comments: 89,
+    isLikedByCurrentUser: false,
     stage: 'Готово к показу',
     coverLabel: 'creative direction',
     cover:
@@ -41,6 +42,7 @@ export const ideas: Idea[] = [
     role: 'Product designer',
     likes: 287,
     comments: 64,
+    isLikedByCurrentUser: false,
     stage: 'Идет тест',
     coverLabel: 'mobile product',
     cover:
@@ -58,6 +60,7 @@ export const ideas: Idea[] = [
     role: 'Brand designer',
     likes: 418,
     comments: 97,
+    isLikedByCurrentUser: false,
     stage: 'Подготовка к печати',
     coverLabel: 'brand identity',
     cover:
@@ -75,6 +78,7 @@ export const ideas: Idea[] = [
     role: 'Illustrator',
     likes: 236,
     comments: 41,
+    isLikedByCurrentUser: false,
     stage: 'Концепт',
     coverLabel: 'editorial art',
     cover:
@@ -92,6 +96,7 @@ export const ideas: Idea[] = [
     role: 'UX architect',
     likes: 301,
     comments: 52,
+    isLikedByCurrentUser: false,
     stage: 'UX review',
     coverLabel: 'data driven ui',
     cover:
@@ -109,6 +114,7 @@ export const ideas: Idea[] = [
     role: 'Architect',
     likes: 198,
     comments: 33,
+    isLikedByCurrentUser: false,
     stage: 'Визуализация',
     coverLabel: 'architectural concept',
     cover:
@@ -126,6 +132,7 @@ export const ideas: Idea[] = [
     role: 'Interior designer',
     likes: 259,
     comments: 48,
+    isLikedByCurrentUser: false,
     stage: 'Смета',
     coverLabel: 'interior system',
     cover:
@@ -143,6 +150,7 @@ export const ideas: Idea[] = [
     role: 'Design lead',
     likes: 321,
     comments: 58,
+    isLikedByCurrentUser: false,
     stage: 'A/B гипотеза',
     coverLabel: 'growth website',
     cover:

@@ -1,10 +1,16 @@
-import { IdeaCard, type FilterCategory, type Idea } from '../../../entities/idea'
+import { IdeaCard, type FilterCategory, type Idea, type IdeaComment } from '../../../entities/idea'
+import { type User } from '../../../entities/user'
 
 type IdeaFeedProps = {
   ideas: Idea[]
   activeCategory: FilterCategory
   isLoading: boolean
   errorMessage: string | null
+  currentUser: User | null
+  onRequireAuth: () => void
+  onToggleLike: (idea: Idea) => Promise<void>
+  onLoadComments: (ideaId: string) => Promise<IdeaComment[]>
+  onCreateComment: (ideaId: string, text: string) => Promise<IdeaComment>
 }
 
 type FeedStateProps = {
@@ -23,7 +29,17 @@ function FeedState({ title, description }: FeedStateProps) {
   )
 }
 
-export function IdeaFeed({ ideas, activeCategory, isLoading, errorMessage }: IdeaFeedProps) {
+export function IdeaFeed({
+  ideas,
+  activeCategory,
+  isLoading,
+  errorMessage,
+  currentUser,
+  onRequireAuth,
+  onToggleLike,
+  onLoadComments,
+  onCreateComment,
+}: IdeaFeedProps) {
   return (
     <section className="space-y-4">
       <div className="space-y-4">
@@ -64,7 +80,15 @@ export function IdeaFeed({ ideas, activeCategory, isLoading, errorMessage }: Ide
         ) : ideas.length > 0 ? (
           <div className="hide-scrollbar h-[min(68vh,52rem)] snap-y snap-proximity space-y-5 overflow-y-auto pr-1 sm:pr-2">
             {ideas.map((idea, index) => (
-              <IdeaCard key={`${String(idea.id)}-${index}`} idea={idea} />
+              <IdeaCard
+                key={`${String(idea.id)}-${index}`}
+                idea={idea}
+                currentUser={currentUser}
+                onRequireAuth={onRequireAuth}
+                onToggleLike={onToggleLike}
+                onLoadComments={onLoadComments}
+                onCreateComment={onCreateComment}
+              />
             ))}
           </div>
         ) : (

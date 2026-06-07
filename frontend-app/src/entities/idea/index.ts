@@ -7,5 +7,6 @@ export type {
   FilterCategory,
   Idea,
   IdeaCategory,
+  IdeaComment,
   Tag,
 } from './model/types'

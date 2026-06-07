@@ -23,6 +23,14 @@ export type CreateIdeaPayload = {
   tags: Tag['id'][]
 }
 
+export type IdeaComment = {
+  id: string
+  ideaId: string
+  author: User | string
+  text: string
+  created_at: string
+}
+
 export type Idea = {
   id: string
   title: string
@@ -34,6 +42,7 @@ export type Idea = {
   role: string
   likes: number
   comments: number
+  isLikedByCurrentUser: boolean
   stage: string
   coverLabel: string
   cover: string

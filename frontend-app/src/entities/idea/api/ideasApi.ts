@@ -1,11 +1,35 @@
-import { apiClient } from '../../../shared/api/httpClient'
+import { ApiError, apiClient } from '../../../shared/api/httpClient'
 import { type User } from '../../user'
 import { ideas as mockIdeas } from '../model/mockIdeas'
-import { type CreateIdeaPayload, type Idea, type IdeaCategory, type Tag } from '../model/types'
+import {
+  type CreateIdeaPayload,
+  type Idea,
+  type IdeaCategory,
+  type IdeaComment,
+  type Tag,
+} from '../model/types'
 
 type IdeaApiTag = string | number | { id?: string | number; name?: string; title?: string }
+
+type RawComment = Partial<{
+  id: string | number
+  idea: string | number
+  idea_id: string | number
+  author: User | string | number
+  user: User | string | number
+  text: string
+  content: string
+  body: string
+  comment: string
+  created_at: string
+  created: string
+}>
+
 type TagsApiResponse = IdeaApiTag[] | { results?: IdeaApiTag[]; data?: IdeaApiTag[] }
 type IdeasApiResponse = IdeaApiRecord[] | { results?: IdeaApiRecord[]; data?: IdeaApiRecord[] }
+type CommentsApiResponse =
+  | RawComment[]
+  | { results?: RawComment[]; data?: RawComment[]; comments?: RawComment[] }
 
 type IdeaApiRecord = Partial<{
   id: string | number
@@ -23,16 +47,36 @@ type IdeaApiRecord = Partial<{
   image_url: string | null
   likes_count: number
   likes: number
+  is_liked: boolean
+  isLiked: boolean
+  liked: boolean
+  liked_by_me: boolean
   comments_count: number
-  comments: number
+  comments: number | RawComment[]
   author: User | string | number
   role: string
   tags: IdeaApiTag[]
 }>
 
+type LikeApiResponse = Partial<{
+  likes_count: number
+  likes: number
+  is_liked: boolean
+  isLiked: boolean
+  liked: boolean
+  liked_by_me: boolean
+}>
+
+type IdeaLikeState = {
+  likes: number
+  isLikedByCurrentUser: boolean
+}
+
 const FALLBACK_CATEGORY: IdeaCategory = 'UI/UX'
 const DEFAULT_CREATED_IDEA_STATUS = 'draft'
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? ''
+const localIdeaComments: Record<string, IdeaComment[]> = {}
+const localLikedIdeaIds = new Set<string>()
 
 function getStatusLabel(status: string | undefined) {
   switch (status) {
@@ -43,6 +87,12 @@ function getStatusLabel(status: string | undefined) {
     default:
       return 'Черновик'
   }
+}
+
+function waitForLocalResponse() {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, 250)
+  })
 }
 
 function getApiOrigin() {
@@ -137,7 +187,7 @@ function normalizeIdeaTags(apiTags: IdeaApiTag[] | undefined, fallbackTags: stri
   return (tags?.length ? tags : fallbackTags).filter(Boolean)
 }
 
-function normalizeAuthor(apiAuthor: IdeaApiRecord['author'], fallbackAuthor: User) {
+function normalizeAuthor(apiAuthor: IdeaApiRecord['author'] | RawComment['author'], fallbackAuthor: User) {
   if (typeof apiAuthor === 'string') {
     return apiAuthor
   }
@@ -157,6 +207,22 @@ function getCoverImageUrl(apiIdea: IdeaApiRecord, payload: CreateIdeaPayload) {
     apiIdea.image ??
     payload.cover_image_URL
   )
+}
+
+function getCommentsCount(apiIdea: IdeaApiRecord) {
+  if (typeof apiIdea.comments === 'number') {
+    return apiIdea.comments
+  }
+
+  if (Array.isArray(apiIdea.comments)) {
+    return apiIdea.comments.length
+  }
+
+  return apiIdea.comments_count ?? 0
+}
+
+function getLikedState(apiIdea: IdeaApiRecord) {
+  return Boolean(apiIdea.is_liked ?? apiIdea.isLiked ?? apiIdea.liked ?? apiIdea.liked_by_me)
 }
 
 function normalizeIdea(
@@ -179,11 +245,90 @@ function normalizeIdea(
     author: normalizeAuthor(apiIdea.author, author),
     role: apiIdea.role ?? 'Автор идеи',
     likes: apiIdea.likes_count ?? apiIdea.likes ?? 0,
-    comments: apiIdea.comments_count ?? apiIdea.comments ?? 0,
+    comments: getCommentsCount(apiIdea),
+    isLikedByCurrentUser: getLikedState(apiIdea),
     stage: apiIdea.stage ?? getStatusLabel(status),
     coverLabel: apiIdea.coverLabel ?? status,
     cover: apiIdea.cover ?? getCoverBackground(getCoverImageUrl(apiIdea, payload)),
   }
+}
+
+function normalizeComment(rawComment: RawComment, ideaId: string, fallbackAuthor: User): IdeaComment {
+  return {
+    id: String(rawComment.id ?? globalThis.crypto?.randomUUID?.() ?? `comment-${Date.now()}`),
+    ideaId: String(rawComment.idea_id ?? rawComment.idea ?? ideaId),
+    author: normalizeAuthor(rawComment.author ?? rawComment.user, fallbackAuthor),
+    text:
+      rawComment.text?.trim() ??
+      rawComment.content?.trim() ??
+      rawComment.body?.trim() ??
+      rawComment.comment?.trim() ??
+      '',
+    created_at: rawComment.created_at ?? rawComment.created ?? new Date().toISOString(),
+  }
+}
+
+function normalizeCommentsResponse(
+  response: CommentsApiResponse,
+  ideaId: string,
+  fallbackAuthor: User,
+): IdeaComment[] {
+  const comments = Array.isArray(response)
+    ? response
+    : response.results ?? response.data ?? response.comments ?? []
+
+  return comments.map((comment) => normalizeComment(comment, ideaId, fallbackAuthor)).filter((comment) => comment.text)
+}
+
+function getRawCreatedComment(response: unknown): RawComment {
+  if (response && typeof response === 'object' && !Array.isArray(response) && 'comment' in response) {
+    const comment = (response as { comment: unknown }).comment
+
+    if (comment && typeof comment === 'object' && !Array.isArray(comment)) {
+      return comment as RawComment
+    }
+  }
+
+  return response && typeof response === 'object' && !Array.isArray(response) ? (response as RawComment) : {}
+}
+
+function getFilledIdeaPath(pathTemplate: string, ideaId: string) {
+  return pathTemplate.replace('{ideaId}', encodeURIComponent(ideaId))
+}
+
+function getIdeaLikePaths(ideaId: string) {
+  return [
+    '/v1/ideas/{ideaId}/like/',
+    '/v1/ideas/{ideaId}/likes/',
+    '/v1/ideas/{ideaId}/toggle-like/',
+  ].map((path) => getFilledIdeaPath(path, ideaId))
+}
+
+function getIdeaCommentsPaths(ideaId: string) {
+  return ['/v1/ideas/{ideaId}/comments/', '/v1/comments/ideas/{ideaId}/'].map((path) =>
+    getFilledIdeaPath(path, ideaId),
+  )
+}
+
+function normalizeLikeResponse(response: LikeApiResponse | null, idea: Idea): IdeaLikeState {
+  const nextLikedState =
+    response?.is_liked ?? response?.isLiked ?? response?.liked ?? response?.liked_by_me ?? !idea.isLikedByCurrentUser
+  const fallbackLikes = idea.likes + (nextLikedState ? 1 : -1)
+
+  return {
+    likes: Math.max(0, response?.likes_count ?? response?.likes ?? fallbackLikes),
+    isLikedByCurrentUser: nextLikedState,
+  }
+}
+
+function rememberIdeaComments(idea: IdeaApiRecord, normalizedIdea: Idea, fallbackAuthor: User) {
+  if (!Array.isArray(idea.comments)) {
+    return
+  }
+
+  localIdeaComments[normalizedIdea.id] = idea.comments
+    .map((comment) => normalizeComment(comment, normalizedIdea.id, fallbackAuthor))
+    .filter((comment) => comment.text)
 }
 
 function normalizeIdeasResponse(response: IdeasApiResponse): Idea[] {
@@ -196,8 +341,8 @@ function normalizeIdeasResponse(response: IdeasApiResponse): Idea[] {
     created_at: new Date().toISOString(),
   }
 
-  return ideas.map((idea) =>
-    normalizeIdea(
+  return ideas.map((idea) => {
+    const normalizedIdea = normalizeIdea(
       idea,
       {
         title: idea.title ?? '',
@@ -206,8 +351,12 @@ function normalizeIdeasResponse(response: IdeasApiResponse): Idea[] {
         tags: [],
       },
       fallbackAuthor,
-    ),
-  )
+    )
+
+    rememberIdeaComments(idea, normalizedIdea, fallbackAuthor)
+
+    return normalizedIdea
+  })
 }
 
 async function getLocalCreatedIdea(
@@ -215,9 +364,7 @@ async function getLocalCreatedIdea(
   author: User,
   selectedTags: string[] = [],
 ) {
-  await new Promise((resolve) => {
-    window.setTimeout(resolve, 350)
-  })
+  await waitForLocalResponse()
 
   return normalizeIdea({}, payload, author, selectedTags)
 }
@@ -238,6 +385,124 @@ export const ideasApi = {
     const tags = await apiClient.get<TagsApiResponse>('/v1/tags/')
 
     return normalizeTagsResponse(tags)
+  },
+  getIdeaComments: async (ideaId: string): Promise<IdeaComment[]> => {
+    if (!apiClient.isConfigured) {
+      await waitForLocalResponse()
+
+      return localIdeaComments[ideaId] ?? []
+    }
+
+    let lastError: unknown = null
+    const fallbackAuthor: User = {
+      id: 'comment-author',
+      username: 'Пользователь',
+      email: '',
+      avatar_URL: '',
+      created_at: new Date().toISOString(),
+    }
+
+    for (const commentsPath of getIdeaCommentsPaths(ideaId)) {
+      try {
+        const response = await apiClient.get<CommentsApiResponse>(commentsPath)
+        const comments = normalizeCommentsResponse(response, ideaId, fallbackAuthor)
+
+        localIdeaComments[ideaId] = comments
+
+        return comments
+      } catch (error) {
+        lastError = error
+
+        if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    if (lastError instanceof ApiError && (lastError.status === 404 || lastError.status === 405)) {
+      return localIdeaComments[ideaId] ?? []
+    }
+
+    throw lastError
+  },
+  toggleIdeaLike: async (idea: Idea): Promise<IdeaLikeState> => {
+    if (!apiClient.isConfigured) {
+      await waitForLocalResponse()
+
+      if (localLikedIdeaIds.has(idea.id)) {
+        localLikedIdeaIds.delete(idea.id)
+      } else {
+        localLikedIdeaIds.add(idea.id)
+      }
+
+      return normalizeLikeResponse(null, idea)
+    }
+
+    let lastError: unknown = null
+
+    for (const likePath of getIdeaLikePaths(idea.id)) {
+      try {
+        const response = await apiClient.post<LikeApiResponse | null>(likePath, {})
+
+        return normalizeLikeResponse(response, idea)
+      } catch (error) {
+        lastError = error
+
+        if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    throw lastError
+  },
+  createIdeaComment: async (ideaId: string, text: string, author: User): Promise<IdeaComment> => {
+    const payload = { text: text.trim(), content: text.trim() }
+
+    if (!apiClient.isConfigured) {
+      await waitForLocalResponse()
+
+      const comment = normalizeComment(
+        {
+          idea_id: ideaId,
+          author,
+          text: payload.text,
+        },
+        ideaId,
+        author,
+      )
+
+      localIdeaComments[ideaId] = [...(localIdeaComments[ideaId] ?? []), comment]
+
+      return comment
+    }
+
+    let lastError: unknown = null
+
+    for (const commentsPath of getIdeaCommentsPaths(ideaId)) {
+      try {
+        const response = await apiClient.post<unknown>(commentsPath, payload)
+        const comment = normalizeComment(getRawCreatedComment(response), ideaId, author)
+
+        localIdeaComments[ideaId] = [...(localIdeaComments[ideaId] ?? []), comment]
+
+        return comment
+      } catch (error) {
+        lastError = error
+
+        if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    throw lastError
   },
   createIdea: async (
     payload: CreateIdeaPayload,
