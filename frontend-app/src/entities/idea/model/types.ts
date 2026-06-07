@@ -11,6 +11,18 @@ export type IdeaCategory =
 
 export type FilterCategory = 'Все' | IdeaCategory
 
+export type Tag = {
+  id: string | number
+  name: string
+}
+
+export type CreateIdeaPayload = {
+  title: string
+  description: string
+  cover_image_URL: string | null
+  tags: Tag['id'][]
+}
+
 export type Idea = {
   id: string
   title: string

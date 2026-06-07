@@ -18,8 +18,9 @@ export type RegisterCredentials = {
 }
 
 export type AuthTokens = {
-  refresh: string
   access: string
+  refresh?: string
+  tokenType?: 'Bearer' | 'Token'
 }
 
 export type AuthResponse = {

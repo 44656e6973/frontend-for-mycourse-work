@@ -88,6 +88,46 @@ export function LockIcon(props: IconProps) {
   )
 }
 
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.75 6.75 5.5 12l5.25 5.25" />
+      <path strokeLinecap="round" d="M6 12h12.5" />
+    </svg>
+  )
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="m5.75 12.75 4 4 8.5-9.5" />
+    </svg>
+  )
+}
+
+export function ImageIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <rect width="16.5" height="13.5" x="3.75" y="5.25" rx="2" />
+      <circle cx="8.5" cy="9.5" r="1.35" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="m6.75 16.25 3.45-3.45a1.2 1.2 0 0 1 1.7 0l1.1 1.1 1.9-1.9a1.2 1.2 0 0 1 1.7 0l2.65 2.65" />
+    </svg>
+  )
+}
+
+export function TagIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4.75 11.35V6.5A1.75 1.75 0 0 1 6.5 4.75h4.85c.464 0 .91.184 1.238.513l6.15 6.15a1.75 1.75 0 0 1 0 2.474l-4.85 4.85a1.75 1.75 0 0 1-2.475 0l-6.15-6.15a1.75 1.75 0 0 1-.513-1.237Z"
+      />
+      <circle cx="8.5" cy="8.5" r="1" />
+    </svg>
+  )
+}
+
 export function UserIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>

@@ -1,26 +1,115 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { startTransition, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
 
 import { IDEA_CATEGORIES, filterIdeas, ideasApi } from '../entities/idea'
-import { type FilterCategory, type Idea } from '../entities/idea'
+import { type CreateIdeaPayload, type FilterCategory, type Idea } from '../entities/idea'
 import { type User, authApi } from '../entities/user'
 import { AuthModal } from '../features/auth'
+import { CreateIdeaPage } from '../features/idea-create'
 import { FilterBar } from '../features/idea-filter'
 import { AppHeader } from '../widgets/app-header'
 import { IdeaFeed } from '../widgets/idea-feed'
-import { tokenStorage } from '../shared/api/tokenStorage'
+import { AUTH_TOKENS_CHANGED_EVENT, tokenStorage } from '../shared/api/tokenStorage'
+
+const CREATE_IDEA_PATH = '/ideas/new'
+
+type AppPage = 'feed' | 'create-idea'
+
+function getPageFromLocation(): AppPage {
+  return window.location.pathname === CREATE_IDEA_PATH ? 'create-idea' : 'feed'
+}
+
+function getPathForPage(page: AppPage) {
+  return page === 'create-idea' ? CREATE_IDEA_PATH : '/'
+}
+
+function getInitialRouteState() {
+  const requestedPage = getPageFromLocation()
+
+  if (requestedPage === 'create-idea') {
+    window.history.replaceState(null, '', getPathForPage('feed'))
+
+    return {
+      page: 'feed' as AppPage,
+      shouldOpenAuthModal: true,
+    }
+  }
+
+  return {
+    page: requestedPage,
+    shouldOpenAuthModal: false,
+  }
+}
 
 function App() {
+  const [initialRoute] = useState(getInitialRouteState)
   const [ideas, setIdeas] = useState<Idea[]>([])
   const [isIdeasLoading, setIsIdeasLoading] = useState(true)
   const [ideasError, setIdeasError] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(initialRoute.shouldOpenAuthModal)
+  const [currentPage, setCurrentPage] = useState<AppPage>(initialRoute.page)
   const [titleQuery, setTitleQuery] = useState('')
   const [tagQuery, setTagQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState<FilterCategory>(IDEA_CATEGORIES[0])
 
   const deferredTitleQuery = useDeferredValue(titleQuery)
   const deferredTagQuery = useDeferredValue(tagQuery)
+
+  const navigateToPage = useCallback((page: AppPage, mode: 'push' | 'replace' = 'push') => {
+    const nextPath = getPathForPage(page)
+
+    if (window.location.pathname !== nextPath) {
+      if (mode === 'replace') {
+        window.history.replaceState(null, '', nextPath)
+      } else {
+        window.history.pushState(null, '', nextPath)
+      }
+    }
+
+    setCurrentPage(page)
+  }, [])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const requestedPage = getPageFromLocation()
+
+      if (requestedPage === 'create-idea' && !currentUser) {
+        navigateToPage('feed', 'replace')
+        setIsAuthModalOpen(true)
+        return
+      }
+
+      setCurrentPage(requestedPage)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [currentUser, navigateToPage])
+
+  useEffect(() => {
+    const handleAuthTokensChanged = (event: Event) => {
+      const detail = (event as CustomEvent<{ hasTokens: boolean }>).detail
+
+      if (detail?.hasTokens) {
+        return
+      }
+
+      setCurrentUser(null)
+
+      if (getPageFromLocation() === 'create-idea') {
+        navigateToPage('feed', 'replace')
+      }
+    }
+
+    window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, handleAuthTokensChanged)
+
+    return () => {
+      window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, handleAuthTokensChanged)
+    }
+  }, [navigateToPage])
 
   useEffect(() => {
     let isMounted = true
@@ -76,6 +165,37 @@ function App() {
     })
   }
 
+  const handleOpenCreateIdea = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true)
+      return
+    }
+
+    navigateToPage('create-idea')
+  }
+
+  const handleBackToFeed = () => {
+    navigateToPage('feed')
+  }
+
+  const handleCreateIdea = async (payload: CreateIdeaPayload, selectedTags: string[]) => {
+    if (!currentUser || !tokenStorage.hasTokens()) {
+      setIsAuthModalOpen(true)
+      throw new Error('Войдите заново, чтобы создать идею')
+    }
+
+    const createdIdea = await ideasApi.createIdea(payload, currentUser, selectedTags)
+
+    startTransition(() => {
+      setIdeas((currentIdeas) => [createdIdea, ...currentIdeas])
+      setTitleQuery('')
+      setTagQuery('')
+      setActiveCategory(IDEA_CATEGORIES[0])
+    })
+
+    navigateToPage('feed')
+  }
+
   const handleLogout = async () => {
     console.log('Starting logout...')
     try {
@@ -88,6 +208,7 @@ function App() {
       console.log('Clearing tokens and resetting user')
       tokenStorage.clearTokens()
       setCurrentUser(null)
+      navigateToPage('feed')
     }
   }
 
@@ -97,27 +218,40 @@ function App() {
         <AppHeader
           titleQuery={titleQuery}
           currentUser={currentUser}
+          isCreateButtonVisible={currentPage !== 'create-idea'}
+          isSearchVisible={currentPage === 'feed'}
           onTitleQueryChange={setTitleQuery}
           onAuthClick={() => setIsAuthModalOpen(true)}
+          onCreateIdeaClick={handleOpenCreateIdea}
           onLogout={handleLogout}
         />
 
         <main className="space-y-6 border-t border-slate-200/70 px-3 py-4 sm:px-5 sm:py-5 lg:px-6">
-          <FilterBar
-            categories={IDEA_CATEGORIES}
-            activeCategory={activeCategory}
-            onCategoryChange={handleCategoryChange}
-            tagQuery={tagQuery}
-            onTagQueryChange={setTagQuery}
-            resultsCount={filteredIdeas.length}
-            onResetFilters={handleResetFilters}
-          />
-          <IdeaFeed
-            ideas={filteredIdeas}
-            activeCategory={activeCategory}
-            isLoading={isIdeasLoading}
-            errorMessage={ideasError}
-          />
+          {currentPage === 'create-idea' && currentUser ? (
+            <CreateIdeaPage
+              currentUser={currentUser}
+              onBack={handleBackToFeed}
+              onCreateIdea={handleCreateIdea}
+            />
+          ) : (
+            <>
+              <FilterBar
+                categories={IDEA_CATEGORIES}
+                activeCategory={activeCategory}
+                onCategoryChange={handleCategoryChange}
+                tagQuery={tagQuery}
+                onTagQueryChange={setTagQuery}
+                resultsCount={filteredIdeas.length}
+                onResetFilters={handleResetFilters}
+              />
+              <IdeaFeed
+                ideas={filteredIdeas}
+                activeCategory={activeCategory}
+                isLoading={isIdeasLoading}
+                errorMessage={ideasError}
+              />
+            </>
+          )}
         </main>
       </div>
 

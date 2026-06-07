@@ -6,16 +6,22 @@ import { BrandIcon, SearchIcon, UserIcon } from '../../../shared/ui/Icons'
 type AppHeaderProps = {
   titleQuery: string
   currentUser: User | null
+  isCreateButtonVisible?: boolean
+  isSearchVisible?: boolean
   onTitleQueryChange: (value: string) => void
   onAuthClick: () => void
+  onCreateIdeaClick: () => void
   onLogout?: () => void
 }
 
 export function AppHeader({
   titleQuery,
   currentUser,
+  isCreateButtonVisible = true,
+  isSearchVisible = true,
   onTitleQueryChange,
   onAuthClick,
+  onCreateIdeaClick,
   onLogout,
 }: AppHeaderProps) {
   const userInitial = currentUser?.username.trim().charAt(0).toLocaleUpperCase('ru-RU')
@@ -37,7 +43,8 @@ export function AppHeader({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/70 bg-slate-100/80 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:min-w-[22rem]">
+          {isSearchVisible ? (
+            <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/70 bg-slate-100/80 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:min-w-[22rem]">
             <SearchIcon className="h-5 w-5 shrink-0 text-slate-400" />
             <input
               type="search"
@@ -46,7 +53,8 @@ export function AppHeader({
               placeholder="Поиск по названию"
               className="w-full border-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
             />
-          </label>
+            </label>
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
             {currentUser ? (
@@ -78,13 +86,15 @@ export function AppHeader({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={currentUser ? undefined : onAuthClick}
-              className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
-            >
-              Создать
-            </button>
+            {currentUser && isCreateButtonVisible ? (
+              <button
+                type="button"
+                onClick={onCreateIdeaClick}
+                className="inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3 text-sm font-medium text-white transition hover:-translate-y-0.5 hover:bg-slate-800"
+              >
+                Создать
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
