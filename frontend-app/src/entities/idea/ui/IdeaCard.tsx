@@ -7,8 +7,8 @@ type IdeaCardProps = {
 
 export function IdeaCard({ idea }: IdeaCardProps) {
   return (
-    <article className="snap-start overflow-hidden rounded-[30px] border border-white/80 bg-white shadow-[0_26px_80px_-42px_rgba(28,16,55,0.55)]">
-      <div className="relative isolate min-h-[17rem] overflow-hidden px-5 py-5 sm:px-7 sm:py-6">
+    <article className="snap-start overflow-hidden rounded-[32px] border border-white/80 bg-white shadow-[0_30px_90px_-44px_rgba(28,16,55,0.58)]">
+      <div className="relative isolate min-h-[21rem] overflow-hidden px-6 py-6 sm:min-h-[24rem] sm:px-8 sm:py-8 lg:min-h-[27rem]">
         <div
           className="absolute inset-0"
           style={{
@@ -19,68 +19,68 @@ export function IdeaCard({ idea }: IdeaCardProps) {
         <div className="absolute -right-10 top-6 h-40 w-40 rounded-full bg-white/25 blur-3xl" />
         <div className="absolute bottom-[-3rem] left-[-2rem] h-36 w-36 rounded-full bg-slate-950/10 blur-3xl" />
 
-        <div className="relative flex h-full flex-col justify-between gap-8 text-white">
+        <div className="relative flex min-h-[17rem] flex-col justify-between gap-10 text-white sm:min-h-[19rem] lg:min-h-[22rem]">
           <div className="flex items-start justify-between gap-4">
-            <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
+            <span className="rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
               {idea.category}
             </span>
-            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white/90 backdrop-blur-sm">
+            <span className="rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-xs font-medium text-white/90 backdrop-blur-sm">
               {idea.stage}
             </span>
           </div>
 
-          <div className="max-w-[28rem] space-y-3">
+          <div className="max-w-[36rem] space-y-4">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-white/70">
               {idea.coverLabel}
             </p>
-            <p className="font-display text-3xl font-semibold tracking-[-0.04em] sm:text-[2.15rem]">
+            <p className="font-display text-[2.25rem] font-semibold leading-tight tracking-[-0.04em] sm:text-[2.75rem] lg:text-[3.15rem]">
               {idea.previewTitle}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="space-y-5 px-5 py-5 sm:px-7 sm:py-6">
-        <div className="space-y-3">
-          <span className="inline-flex rounded-full bg-fuchsia-50 px-3 py-1 text-xs font-medium text-fuchsia-700">
+      <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-7">
+        <div className="space-y-4">
+          <span className="inline-flex rounded-full bg-fuchsia-50 px-4 py-1.5 text-xs font-medium text-fuchsia-700">
             {idea.category}
           </span>
-          <div className="space-y-2">
-            <h2 className="font-display text-2xl font-semibold tracking-[-0.04em] text-slate-950">
+          <div className="space-y-3">
+            <h2 className="font-display text-[1.75rem] font-semibold leading-tight tracking-[-0.04em] text-slate-950 sm:text-[2.1rem]">
               {idea.title}
             </h2>
-            <p className="max-w-[48rem] text-sm leading-7 text-slate-500 sm:text-[0.96rem]">
+            <p className="max-w-[56rem] text-base leading-8 text-slate-500">
               {idea.description}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {idea.tags.map((tag, index) => (
             <span
               key={`${idea.id}-tag-${index}`}
-              className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500"
+              className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-500"
             >
               #{String(tag)}
             </span>
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
+        <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-5">
           <div>
-            <p className="text-sm font-semibold text-slate-900">
+            <p className="text-base font-semibold text-slate-900">
               {String(typeof idea.author === 'object' ? idea.author.username : idea.author)}
             </p>
             <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{String(idea.role)}</p>
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-slate-400">
+          <div className="flex items-center gap-5 text-base text-slate-400">
             <span className="inline-flex items-center gap-1.5">
-              <HeartIcon className="h-4 w-4" />
+              <HeartIcon className="h-5 w-5" />
               {idea.likes}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <CommentIcon className="h-4 w-4" />
+              <CommentIcon className="h-5 w-5" />
               {idea.comments}
             </span>
           </div>
