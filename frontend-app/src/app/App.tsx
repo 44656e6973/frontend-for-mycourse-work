@@ -2,11 +2,12 @@ import { startTransition, useDeferredValue, useEffect, useMemo, useState } from 
 
 import { IDEA_CATEGORIES, filterIdeas, ideasApi } from '../entities/idea'
 import { type FilterCategory, type Idea } from '../entities/idea'
-import { type User } from '../entities/user'
+import { type User, authApi } from '../entities/user'
 import { AuthModal } from '../features/auth'
 import { FilterBar } from '../features/idea-filter'
 import { AppHeader } from '../widgets/app-header'
 import { IdeaFeed } from '../widgets/idea-feed'
+import { tokenStorage } from '../shared/api/tokenStorage'
 
 function App() {
   const [ideas, setIdeas] = useState<Idea[]>([])
@@ -75,6 +76,21 @@ function App() {
     })
   }
 
+  const handleLogout = async () => {
+    console.log('Starting logout...')
+    try {
+      await authApi.logout()
+      console.log('Logout API call successful')
+    } catch (error) {
+      console.error('Logout API error:', error)
+      // Даже если запрос ошибётся, очищаем токены локально
+    } finally {
+      console.log('Clearing tokens and resetting user')
+      tokenStorage.clearTokens()
+      setCurrentUser(null)
+    }
+  }
+
   return (
     <div className="mx-auto min-h-screen max-w-[1380px] px-4 py-4 sm:px-6 lg:px-8">
       <div className="overflow-hidden rounded-[34px] border border-white/60 bg-white/70 shadow-[0_24px_80px_-36px_rgba(41,20,73,0.45)] backdrop-blur-xl">
@@ -83,6 +99,7 @@ function App() {
           currentUser={currentUser}
           onTitleQueryChange={setTitleQuery}
           onAuthClick={() => setIsAuthModalOpen(true)}
+          onLogout={handleLogout}
         />
 
         <main className="space-y-6 border-t border-slate-200/70 px-3 py-4 sm:px-5 sm:py-5 lg:px-6">

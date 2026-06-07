@@ -63,8 +63,8 @@ export function IdeaFeed({ ideas, activeCategory, isLoading, errorMessage }: Ide
           />
         ) : ideas.length > 0 ? (
           <div className="hide-scrollbar h-[min(68vh,52rem)] snap-y snap-proximity space-y-5 overflow-y-auto pr-1 sm:pr-2">
-            {ideas.map((idea) => (
-              <IdeaCard key={idea.id} idea={idea} />
+            {ideas.map((idea, index) => (
+              <IdeaCard key={`${String(idea.id)}-${index}`} idea={idea} />
             ))}
           </div>
         ) : (

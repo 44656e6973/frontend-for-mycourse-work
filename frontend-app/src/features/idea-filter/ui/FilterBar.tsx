@@ -29,12 +29,12 @@ export function FilterBar({
     <section className="space-y-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
-          {categories.map((category) => {
+          {categories.map((category, index) => {
             const isActive = category === activeCategory
 
             return (
               <button
-                key={category}
+                key={`category-${index}-${String(category)}`}
                 type="button"
                 onClick={() => onCategoryChange(category)}
                 className={[
@@ -44,7 +44,7 @@ export function FilterBar({
                     : 'border border-white/70 bg-white/80 text-slate-600 hover:border-slate-200 hover:text-slate-950',
                 ].join(' ')}
               >
-                {category}
+                {String(category)}
               </button>
             )
           })}

@@ -8,6 +8,7 @@ type AppHeaderProps = {
   currentUser: User | null
   onTitleQueryChange: (value: string) => void
   onAuthClick: () => void
+  onLogout?: () => void
 }
 
 export function AppHeader({
@@ -15,6 +16,7 @@ export function AppHeader({
   currentUser,
   onTitleQueryChange,
   onAuthClick,
+  onLogout,
 }: AppHeaderProps) {
   const userInitial = currentUser?.username.trim().charAt(0).toLocaleUpperCase('ru-RU')
 
@@ -48,14 +50,23 @@ export function AppHeader({
 
           <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
             {currentUser ? (
-              <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-semibold text-white">
-                  {userInitial || <UserIcon className="h-4 w-4" />}
-                </span>
-                <span className="max-w-[10rem] truncate text-sm font-semibold text-slate-900">
-                  {currentUser.username}
-                </span>
-              </div>
+              <>
+                <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2.5">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-semibold text-white">
+                    {userInitial || <UserIcon className="h-4 w-4" />}
+                  </span>
+                  <span className="max-w-[10rem] truncate text-sm font-semibold text-slate-900">
+                    {String(currentUser.username)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="inline-flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:text-slate-950 hover:border-slate-300"
+                >
+                  Выйти
+                </button>
+              </>
             ) : (
               <button
                 type="button"

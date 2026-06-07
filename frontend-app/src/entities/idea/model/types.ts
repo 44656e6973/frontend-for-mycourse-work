@@ -1,3 +1,5 @@
+import { type User } from '../../user'
+
 export type IdeaCategory =
   | 'Веб-дизайн'
   | 'Мобильные приложения'
@@ -16,7 +18,7 @@ export type Idea = {
   description: string
   category: IdeaCategory
   tags: string[]
-  author: string
+  author: User | string
   role: string
   likes: number
   comments: number

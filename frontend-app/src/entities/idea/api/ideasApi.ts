@@ -8,6 +8,6 @@ export const ideasApi = {
       return Promise.resolve(mockIdeas)
     }
 
-    return apiClient.get<Idea[]>('/ideas')
+    return apiClient.get<Idea[]>('/v1/ideas')
   },
 }

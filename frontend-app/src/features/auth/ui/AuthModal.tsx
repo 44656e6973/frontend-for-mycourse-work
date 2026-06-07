@@ -2,6 +2,8 @@ import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
 
 import { authApi, type User } from '../../../entities/user'
 import { CloseIcon, LockIcon, MailIcon, UserIcon } from '../../../shared/ui/Icons'
+import { ApiError } from '../../../shared/api/httpClient'
+import { tokenStorage } from '../../../shared/api/tokenStorage'
 
 type AuthMode = 'login' | 'register'
 
@@ -25,6 +27,58 @@ const initialFormState: AuthFormState = {
   password: '',
   confirmPassword: '',
   remember: true,
+}
+
+// Map API field names to user-friendly Russian names
+const fieldNameMap: Record<string, string> = {
+  password_confirm: 'Повтор пароля',
+  confirmPassword: 'Повтор пароля',
+  password: 'Пароль',
+  email: 'Email',
+  username: 'Имя',
+  name: 'Имя',
+}
+
+function extractErrorMessage(error: unknown): string | null {
+  if (error instanceof ApiError) {
+    const body = error.body as Record<string, unknown> | null
+
+    // Check for non_field_errors (common API error format)
+    if (body && Array.isArray(body.non_field_errors) && body.non_field_errors.length > 0) {
+      return String(body.non_field_errors[0])
+    }
+
+    // Check for field-specific errors (skip numeric keys like "0", "1")
+    if (body && typeof body === 'object') {
+      for (const [key, value] of Object.entries(body)) {
+        // Skip numeric indices
+        if (/^\d+$/.test(key)) {
+          if (typeof value === 'string') {
+            return value
+          }
+          continue
+        }
+
+        // Process field errors
+        if (Array.isArray(value) && value.length > 0) {
+          const errorMsg = String(value[0])
+          const fieldName = fieldNameMap[key]
+          return fieldName ? `${fieldName}: ${errorMsg}` : errorMsg
+        }
+      }
+    }
+
+    return error.message || 'Ошибка сервера'
+  }
+
+  // Handle other error types
+  if (error instanceof Error) {
+    console.error('Auth error:', error)
+    return error.message
+  }
+
+  console.error('Unknown error:', error)
+  return null
 }
 
 function validateAuthForm(mode: AuthMode, form: AuthFormState) {
@@ -119,11 +173,17 @@ export function AuthModal({ isOpen, onClose, onAuthSuccess }: AuthModalProps) {
               password: form.password,
             })
 
+      // Сохранить токены если они есть
+      if (response?.tokens) {
+        tokenStorage.setTokens(response.tokens)
+      }
+
       onAuthSuccess(response.user)
       setForm(initialFormState)
       onClose()
-    } catch {
-      setError('Не удалось выполнить запрос')
+    } catch (error) {
+      const errorMessage = extractErrorMessage(error)
+      setError(errorMessage || 'Не удалось выполнить запрос')
     } finally {
       setIsSubmitting(false)
     }

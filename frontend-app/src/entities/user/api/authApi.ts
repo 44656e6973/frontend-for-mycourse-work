@@ -1,4 +1,5 @@
 import { apiClient } from '../../../shared/api/httpClient'
+import { tokenStorage } from '../../../shared/api/tokenStorage'
 import {
   type AuthResponse,
   type LoginCredentials,
@@ -37,22 +38,40 @@ async function getLocalAuthResponse(user: User) {
 }
 
 export const authApi = {
-  login: (credentials: LoginCredentials): Promise<AuthResponse> => {
+  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     if (!apiClient.isConfigured) {
       return getLocalAuthResponse(createLocalUser(credentials.email))
     }
 
-    return apiClient.post<AuthResponse>('/v1/auth/login', {
+    const response = await apiClient.post<AuthResponse>('/v1/auth/login/', {
       email: credentials.email.trim(),
       password: credentials.password,
     })
+    
+    console.log('Login response:', response)
+    return response
   },
-  register: (credentials: RegisterCredentials): Promise<AuthResponse> => {
+  register: async (credentials: RegisterCredentials): Promise<AuthResponse> => {
     if (!apiClient.isConfigured) {
       return getLocalAuthResponse(createLocalUser(credentials.email, credentials.username))
     }
 
-    return apiClient.post<AuthResponse>('/v1/auth/register/', credentials)
+    const response = await apiClient.post<AuthResponse>('/v1/auth/register/', credentials)
+    console.log('Register response:', response)
+    return response
     
+  },
+  logout: async (): Promise<void> => {
+    if (!apiClient.isConfigured) {
+      return Promise.resolve()
+    }
+
+    const tokens = tokenStorage.getTokens()
+    if (!tokens?.access) {
+      return Promise.resolve()
+    }
+
+    await apiClient.post<void>('/v1/auth/logout/', { refresh: tokens.refresh })
+    console.log('Logout response: success')
   },
 }

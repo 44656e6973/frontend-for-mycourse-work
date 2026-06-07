@@ -1,4 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? ''
+const ACCESS_TOKEN_KEY = 'auth_access_token'
 
 export class ApiError extends Error {
   status: number
@@ -20,17 +21,40 @@ async function parseResponseBody(response: Response) {
   const contentType = response.headers.get('content-type') ?? ''
 
   if (contentType.includes('application/json')) {
-    return response.json()
+    try {
+      const text = await response.text()
+      // Если тело пустое, вернуть null вместо попытки парсить JSON
+      return text ? JSON.parse(text) : null
+    } catch {
+      // Если ошибка парсинга JSON, вернуть null
+      return null
+    }
   }
 
   return response.text()
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  // Получить access token из localStorage и добавить в заголовок
+  const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`
+    console.log('Token found, adding to request:', accessToken.substring(0, 20) + '...')
+  } else {
+    console.log('No token found in localStorage')
+  }
+
+  console.log('Making request to:', `${API_BASE_URL}${path}`)
+  console.log('Headers:', headers)
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...headers,
       ...options.headers,
     },
   })

@@ -56,20 +56,22 @@ export function IdeaCard({ idea }: IdeaCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {idea.tags.map((tag) => (
+          {idea.tags.map((tag, index) => (
             <span
-              key={tag}
+              key={`${idea.id}-tag-${index}`}
               className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-500"
             >
-              #{tag}
+              #{String(tag)}
             </span>
           ))}
         </div>
 
         <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
           <div>
-            <p className="text-sm font-semibold text-slate-900">{idea.author}</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{idea.role}</p>
+            <p className="text-sm font-semibold text-slate-900">
+              {String(typeof idea.author === 'object' ? idea.author.username : idea.author)}
+            </p>
+            <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{String(idea.role)}</p>
           </div>
 
           <div className="flex items-center gap-4 text-sm text-slate-400">
