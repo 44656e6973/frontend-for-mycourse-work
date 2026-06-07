@@ -6,26 +6,43 @@ import { type User, authApi } from '../entities/user'
 import { AuthModal } from '../features/auth'
 import { CreateIdeaPage } from '../features/idea-create'
 import { FilterBar } from '../features/idea-filter'
+import { ProfilePage } from '../features/profile'
 import { AppHeader } from '../widgets/app-header'
 import { IdeaFeed } from '../widgets/idea-feed'
 import { AUTH_TOKENS_CHANGED_EVENT, tokenStorage } from '../shared/api/tokenStorage'
 
 const CREATE_IDEA_PATH = '/ideas/new'
+const PROFILE_PATH = '/profile'
 
-type AppPage = 'feed' | 'create-idea'
+type AppPage = 'feed' | 'create-idea' | 'profile'
 
 function getPageFromLocation(): AppPage {
-  return window.location.pathname === CREATE_IDEA_PATH ? 'create-idea' : 'feed'
+  if (window.location.pathname === CREATE_IDEA_PATH) {
+    return 'create-idea'
+  }
+
+  if (window.location.pathname === PROFILE_PATH) {
+    return 'profile'
+  }
+
+  return 'feed'
 }
 
 function getPathForPage(page: AppPage) {
-  return page === 'create-idea' ? CREATE_IDEA_PATH : '/'
+  switch (page) {
+    case 'create-idea':
+      return CREATE_IDEA_PATH
+    case 'profile':
+      return PROFILE_PATH
+    default:
+      return '/'
+  }
 }
 
 function getInitialRouteState() {
   const requestedPage = getPageFromLocation()
 
-  if (requestedPage === 'create-idea') {
+  if (requestedPage === 'create-idea' || requestedPage === 'profile') {
     window.history.replaceState(null, '', getPathForPage('feed'))
 
     return {
@@ -73,7 +90,7 @@ function App() {
     const handlePopState = () => {
       const requestedPage = getPageFromLocation()
 
-      if (requestedPage === 'create-idea' && !currentUser) {
+      if ((requestedPage === 'create-idea' || requestedPage === 'profile') && !currentUser) {
         navigateToPage('feed', 'replace')
         setIsAuthModalOpen(true)
         return
@@ -99,7 +116,7 @@ function App() {
 
       setCurrentUser(null)
 
-      if (getPageFromLocation() === 'create-idea') {
+      if (getPageFromLocation() === 'create-idea' || getPageFromLocation() === 'profile') {
         navigateToPage('feed', 'replace')
       }
     }
@@ -174,8 +191,21 @@ function App() {
     navigateToPage('create-idea')
   }
 
+  const handleOpenProfile = () => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true)
+      return
+    }
+
+    navigateToPage('profile')
+  }
+
   const handleBackToFeed = () => {
     navigateToPage('feed')
+  }
+
+  const handleProfileUpdate = (updatedUser: User) => {
+    setCurrentUser(updatedUser)
   }
 
   const handleCreateIdea = async (payload: CreateIdeaPayload, selectedTags: string[]) => {
@@ -223,6 +253,7 @@ function App() {
           onTitleQueryChange={setTitleQuery}
           onAuthClick={() => setIsAuthModalOpen(true)}
           onCreateIdeaClick={handleOpenCreateIdea}
+          onProfileClick={handleOpenProfile}
           onLogout={handleLogout}
         />
 
@@ -232,6 +263,12 @@ function App() {
               currentUser={currentUser}
               onBack={handleBackToFeed}
               onCreateIdea={handleCreateIdea}
+            />
+          ) : currentPage === 'profile' && currentUser ? (
+            <ProfilePage
+              currentUser={currentUser}
+              onBack={handleBackToFeed}
+              onProfileUpdate={handleProfileUpdate}
             />
           ) : (
             <>

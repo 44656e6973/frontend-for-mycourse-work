@@ -17,6 +17,13 @@ export type RegisterCredentials = {
   password: string
 }
 
+export type UpdateUserPayload = {
+  username: string
+  email: string
+  avatar_URL?: string | null
+  password?: string
+}
+
 export type AuthTokens = {
   access: string
   refresh?: string

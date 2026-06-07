@@ -11,6 +11,7 @@ type AppHeaderProps = {
   onTitleQueryChange: (value: string) => void
   onAuthClick: () => void
   onCreateIdeaClick: () => void
+  onProfileClick: () => void
   onLogout?: () => void
 }
 
@@ -22,6 +23,7 @@ export function AppHeader({
   onTitleQueryChange,
   onAuthClick,
   onCreateIdeaClick,
+  onProfileClick,
   onLogout,
 }: AppHeaderProps) {
   const userInitial = currentUser?.username.trim().charAt(0).toLocaleUpperCase('ru-RU')
@@ -67,6 +69,14 @@ export function AppHeader({
                     {String(currentUser.username)}
                   </span>
                 </div>
+                <button
+                  type="button"
+                  onClick={onProfileClick}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-950"
+                >
+                  <UserIcon className="h-4 w-4" />
+                  Профиль
+                </button>
                 <button
                   type="button"
                   onClick={onLogout}
