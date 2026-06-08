@@ -1,9 +1,8 @@
-import { IdeaCard, type FilterCategory, type Idea, type IdeaComment } from '../../../entities/idea'
+import { IdeaCard, type Idea, type IdeaComment } from '../../../entities/idea'
 import { type User } from '../../../entities/user'
 
 type IdeaFeedProps = {
   ideas: Idea[]
-  activeCategory: FilterCategory
   isLoading: boolean
   errorMessage: string | null
   currentUser: User | null
@@ -33,7 +32,6 @@ function FeedState({ title, description }: FeedStateProps) {
 
 export function IdeaFeed({
   ideas,
-  activeCategory,
   isLoading,
   errorMessage,
   currentUser,
@@ -47,7 +45,7 @@ export function IdeaFeed({
   return (
     <section className="space-y-4">
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 rounded-[28px] bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(247,242,255,0.92))] px-5 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:flex-row sm:items-end sm:justify-between">
+        <div className="rounded-[28px] bg-[linear-gradient(135deg,rgba(255,255,255,0.88),rgba(247,242,255,0.92))] px-5 py-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
               Каталог идей
@@ -57,17 +55,10 @@ export function IdeaFeed({
                 Лента проектов
               </h1>
               <p className="max-w-2xl text-sm leading-7 text-slate-500">
-                Идеи можно искать по названию, фильтровать по тэгам и категории, а саму ленту
-                удобно листать внутри отдельного скролл-блока.
+                Идеи можно искать по названию или тегу, а саму ленту удобно листать внутри
+                отдельного скролл-блока.
               </p>
             </div>
-          </div>
-
-          <div className="rounded-[24px] border border-white/70 bg-white/75 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-              Активная категория
-            </p>
-            <p className="text-base font-semibold text-slate-950">{activeCategory}</p>
           </div>
         </div>
 

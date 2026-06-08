@@ -170,13 +170,7 @@ export function IdeaCard({
         <div className="absolute -right-10 top-6 h-40 w-40 rounded-full bg-white/25 blur-3xl" />
         <div className="absolute bottom-[-3rem] left-[-2rem] h-36 w-36 rounded-full bg-slate-950/10 blur-3xl" />
 
-        <div className="relative flex min-h-[17rem] flex-col justify-between gap-10 text-white sm:min-h-[19rem] lg:min-h-[22rem]">
-          <div className="flex items-start justify-between gap-4">
-            <span className="rounded-full bg-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] backdrop-blur-sm">
-              {idea.category}
-            </span>
-          </div>
-
+        <div className="relative flex min-h-[17rem] flex-col justify-end gap-10 text-white sm:min-h-[19rem] lg:min-h-[22rem]">
           <div className="max-w-[36rem] space-y-4">
             <p className="font-display text-[2.25rem] font-semibold leading-tight tracking-[-0.04em] sm:text-[2.75rem] lg:text-[3.15rem]">
               {idea.previewTitle}
@@ -187,9 +181,6 @@ export function IdeaCard({
 
       <div className="space-y-6 px-6 py-6 sm:px-8 sm:py-7">
         <div className="space-y-4">
-          <span className="inline-flex rounded-full bg-fuchsia-50 px-4 py-1.5 text-xs font-medium text-fuchsia-700">
-            {idea.category}
-          </span>
           <div className="space-y-3">
             <h2 className="font-display text-[1.75rem] font-semibold leading-tight tracking-[-0.04em] text-slate-950 sm:text-[2.1rem]">
               {idea.title}
