@@ -86,7 +86,8 @@ const DEFAULT_CREATED_IDEA_STATUS = 'draft'
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? ''
 const TAGS_PATHS = getTagsPaths()
 const localIdeaComments: Record<string, IdeaComment[]> = {}
-const localLikedIdeaIds = new Set<string>()
+const localCreatedIdeas: Idea[] = []
+const localLikedIdeaIdsByUser = new Map<string, Set<string>>()
 
 function getStatusLabel(status: string | undefined) {
   switch (status) {
@@ -198,7 +199,51 @@ function normalizeTagsResponse(response: TagsApiResponse): Tag[] {
 }
 
 function getLocalTags() {
-  return normalizeTagsResponse(mockIdeas.flatMap((idea) => idea.tags))
+  return normalizeTagsResponse([...localCreatedIdeas, ...mockIdeas].flatMap((idea) => idea.tags))
+}
+
+function getLocalUserKey(user: User) {
+  return (user.email || user.username || user.id).trim().toLocaleLowerCase('ru-RU')
+}
+
+function getLocalLikedIdeaIds(user: User) {
+  const userKey = getLocalUserKey(user)
+  const likedIdeaIds = localLikedIdeaIdsByUser.get(userKey)
+
+  if (likedIdeaIds) {
+    return likedIdeaIds
+  }
+
+  const nextLikedIdeaIds = new Set<string>()
+
+  localLikedIdeaIdsByUser.set(userKey, nextLikedIdeaIds)
+
+  return nextLikedIdeaIds
+}
+
+function isIdeaLikedLocallyByUser(ideaId: string, user: User | null) {
+  return user ? getLocalLikedIdeaIds(user).has(ideaId) : false
+}
+
+function getLocalLikesCount(ideaId: string) {
+  return Array.from(localLikedIdeaIdsByUser.values()).reduce(
+    (likesCount, likedIdeaIds) => likesCount + (likedIdeaIds.has(ideaId) ? 1 : 0),
+    0,
+  )
+}
+
+function forgetLocalIdeaLikes(ideaId: string) {
+  localLikedIdeaIdsByUser.forEach((likedIdeaIds) => {
+    likedIdeaIds.delete(ideaId)
+  })
+}
+
+function getLocalIdeas(currentUser: User | null = null) {
+  return [...localCreatedIdeas, ...mockIdeas].map((idea) => ({
+    ...idea,
+    likes: idea.likes + getLocalLikesCount(idea.id),
+    isLikedByCurrentUser: isIdeaLikedLocallyByUser(idea.id, currentUser),
+  }))
 }
 
 function normalizeIdeaTags(apiTags: IdeaApiTag[] | undefined, fallbackTags: string[]) {
@@ -324,8 +369,8 @@ function getFilledIdeaPath(pathTemplate: string, ideaId: string) {
 
 function getIdeaLikePaths(ideaId: string) {
   return [
-    '/v1/ideas/{ideaId}/like/',
     '/v1/ideas/{ideaId}/likes/',
+    '/v1/ideas/{ideaId}/like/',
     '/v1/ideas/{ideaId}/toggle-like/',
   ].map((path) => getFilledIdeaPath(path, ideaId))
 }
@@ -402,9 +447,9 @@ async function getLocalCreatedIdea(
 }
 
 export const ideasApi = {
-  getIdeas: (): Promise<Idea[]> => {
+  getIdeas: (currentUser: User | null = null): Promise<Idea[]> => {
     if (!apiClient.isConfigured) {
-      return Promise.resolve(mockIdeas)
+      return Promise.resolve(getLocalIdeas(currentUser))
     }
 
     return apiClient.get<IdeasApiResponse>('/v1/ideas').then(normalizeIdeasResponse)
@@ -475,17 +520,23 @@ export const ideasApi = {
 
     throw lastError
   },
-  toggleIdeaLike: async (idea: Idea): Promise<IdeaLikeState> => {
+  toggleIdeaLike: async (idea: Idea, currentUser: User): Promise<IdeaLikeState> => {
     if (!apiClient.isConfigured) {
       await waitForLocalResponse()
 
-      if (localLikedIdeaIds.has(idea.id)) {
-        localLikedIdeaIds.delete(idea.id)
+      const likedIdeaIds = getLocalLikedIdeaIds(currentUser)
+      const wasLikedByCurrentUser = likedIdeaIds.has(idea.id)
+
+      if (wasLikedByCurrentUser) {
+        likedIdeaIds.delete(idea.id)
       } else {
-        localLikedIdeaIds.add(idea.id)
+        likedIdeaIds.add(idea.id)
       }
 
-      return normalizeLikeResponse(null, idea)
+      return {
+        likes: Math.max(0, idea.likes + (wasLikedByCurrentUser ? -1 : 1)),
+        isLikedByCurrentUser: !wasLikedByCurrentUser,
+      }
     }
 
     let lastError: unknown = null
@@ -556,7 +607,13 @@ export const ideasApi = {
     if (!apiClient.isConfigured) {
       await waitForLocalResponse()
       delete localIdeaComments[ideaId]
-      localLikedIdeaIds.delete(ideaId)
+      forgetLocalIdeaLikes(ideaId)
+      const localIdeaIndex = localCreatedIdeas.findIndex((idea) => idea.id === ideaId)
+
+      if (localIdeaIndex >= 0) {
+        localCreatedIdeas.splice(localIdeaIndex, 1)
+      }
+
       return
     }
 
@@ -566,7 +623,7 @@ export const ideasApi = {
       try {
         await apiClient.delete<void>(deletePath)
         delete localIdeaComments[ideaId]
-        localLikedIdeaIds.delete(ideaId)
+        forgetLocalIdeaLikes(ideaId)
         return
       } catch (error) {
         lastError = error
@@ -587,7 +644,11 @@ export const ideasApi = {
     selectedTags: string[] = [],
   ): Promise<Idea> => {
     if (!apiClient.isConfigured) {
-      return getLocalCreatedIdea(payload, author, selectedTags)
+      const createdIdea = await getLocalCreatedIdea(payload, author, selectedTags)
+
+      localCreatedIdeas.unshift(createdIdea)
+
+      return createdIdea
     }
 
     const createdIdea = await apiClient.post<IdeaApiRecord>('/v1/ideas/', payload)

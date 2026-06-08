@@ -30,9 +30,10 @@ function normalizeApiPath(path: string) {
 function getTokenRefreshPaths() {
   const paths = [
     import.meta.env.VITE_TOKEN_REFRESH_PATH,
+    '/token/refresh/',
+    '/token/refresh',
     '/v1/auth/token/refresh/',
     '/v1/auth/refresh/',
-    '/token/refresh/',
   ].filter((path): path is string => Boolean(path?.trim()))
 
   return Array.from(new Set(paths.map((path) => normalizeApiPath(path.trim()))))

@@ -152,7 +152,7 @@ function App() {
     let isMounted = true
 
     ideasApi
-      .getIdeas()
+      .getIdeas(currentUser)
       .then((loadedIdeas) => {
         if (!isMounted) {
           return
@@ -175,7 +175,7 @@ function App() {
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [currentUser])
 
   useEffect(() => {
     let isMounted = true
@@ -259,7 +259,7 @@ function App() {
       throw new Error('Войдите, чтобы поставить лайк')
     }
 
-    const likeState = await ideasApi.toggleIdeaLike(idea)
+    const likeState = await ideasApi.toggleIdeaLike(idea, currentUser)
 
     setIdeas((currentIdeas) =>
       currentIdeas.map((currentIdea) =>
