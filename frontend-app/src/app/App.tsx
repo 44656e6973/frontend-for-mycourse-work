@@ -57,6 +57,24 @@ function getInitialRouteState() {
   }
 }
 
+function isIdeaOwnedByUser(idea: Idea, user: User | null) {
+  if (!user) {
+    return false
+  }
+
+  const author = idea.author
+
+  if (typeof author === 'object') {
+    return (
+      String(author.id) === String(user.id) ||
+      author.username === user.username ||
+      author.email === user.email
+    )
+  }
+
+  return [user.id, user.username, user.email].map(String).includes(String(author))
+}
+
 function App() {
   const [initialRoute] = useState(getInitialRouteState)
   const [ideas, setIdeas] = useState<Idea[]>([])
@@ -257,6 +275,21 @@ function App() {
     return createdComment
   }
 
+  const handleDeleteIdea = async (idea: Idea) => {
+    if (!currentUser || !tokenStorage.hasTokens()) {
+      setIsAuthModalOpen(true)
+      throw new Error('Войдите, чтобы удалить идею')
+    }
+
+    if (!isIdeaOwnedByUser(idea, currentUser)) {
+      throw new Error('Можно удалить только свою идею')
+    }
+
+    await ideasApi.deleteIdea(idea.id)
+
+    setIdeas((currentIdeas) => currentIdeas.filter((currentIdea) => currentIdea.id !== idea.id))
+  }
+
   const handleCreateIdea = async (payload: CreateIdeaPayload, selectedTags: string[]) => {
     if (!currentUser || !tokenStorage.hasTokens()) {
       setIsAuthModalOpen(true)
@@ -302,6 +335,7 @@ function App() {
           onTitleQueryChange={setTitleQuery}
           onAuthClick={() => setIsAuthModalOpen(true)}
           onCreateIdeaClick={handleOpenCreateIdea}
+          onHomeClick={handleBackToFeed}
           onProfileClick={handleOpenProfile}
           onLogout={handleLogout}
         />
@@ -336,10 +370,12 @@ function App() {
                 isLoading={isIdeasLoading}
                 errorMessage={ideasError}
                 currentUser={currentUser}
+                canDeleteIdea={(idea) => isIdeaOwnedByUser(idea, currentUser)}
                 onRequireAuth={handleRequireAuth}
                 onToggleLike={handleToggleIdeaLike}
                 onLoadComments={handleLoadIdeaComments}
                 onCreateComment={handleCreateIdeaComment}
+                onDeleteIdea={handleDeleteIdea}
               />
             </>
           )}

@@ -1,7 +1,7 @@
 import { type ChangeEvent } from 'react'
 
 import { type User } from '../../../entities/user'
-import { BrandIcon, SearchIcon, UserIcon } from '../../../shared/ui/Icons'
+import { SearchIcon, UserIcon } from '../../../shared/ui/Icons'
 
 type AppHeaderProps = {
   titleQuery: string
@@ -11,6 +11,7 @@ type AppHeaderProps = {
   onTitleQueryChange: (value: string) => void
   onAuthClick: () => void
   onCreateIdeaClick: () => void
+  onHomeClick: () => void
   onProfileClick: () => void
   onLogout?: () => void
 }
@@ -23,6 +24,7 @@ export function AppHeader({
   onTitleQueryChange,
   onAuthClick,
   onCreateIdeaClick,
+  onHomeClick,
   onProfileClick,
   onLogout,
 }: AppHeaderProps) {
@@ -35,16 +37,17 @@ export function AppHeader({
   return (
     <header className="space-y-4 px-3 py-4 sm:px-5 lg:px-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ff8dc4_0%,#a42bfd_100%)] shadow-[0_18px_36px_-20px_rgba(168,43,253,0.95)]">
-            <BrandIcon className="h-5 w-5 text-white" />
-          </div>
-          <p className="font-display text-[1.35rem] font-semibold text-slate-950">
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={onHomeClick}
+            className="font-display text-[1.65rem] font-semibold text-slate-950 transition hover:text-slate-700"
+          >
             IdeaBoard
-          </p>
+          </button>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           {isSearchVisible ? (
             <label className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/70 bg-slate-100/80 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] sm:min-w-[22rem]">
             <SearchIcon className="h-5 w-5 shrink-0 text-slate-400" />

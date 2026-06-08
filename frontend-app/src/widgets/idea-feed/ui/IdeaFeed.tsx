@@ -7,10 +7,12 @@ type IdeaFeedProps = {
   isLoading: boolean
   errorMessage: string | null
   currentUser: User | null
+  canDeleteIdea: (idea: Idea) => boolean
   onRequireAuth: () => void
   onToggleLike: (idea: Idea) => Promise<void>
   onLoadComments: (ideaId: string) => Promise<IdeaComment[]>
   onCreateComment: (ideaId: string, text: string) => Promise<IdeaComment>
+  onDeleteIdea: (idea: Idea) => Promise<void>
 }
 
 type FeedStateProps = {
@@ -35,10 +37,12 @@ export function IdeaFeed({
   isLoading,
   errorMessage,
   currentUser,
+  canDeleteIdea,
   onRequireAuth,
   onToggleLike,
   onLoadComments,
   onCreateComment,
+  onDeleteIdea,
 }: IdeaFeedProps) {
   return (
     <section className="space-y-4">
@@ -84,10 +88,12 @@ export function IdeaFeed({
                 key={`${String(idea.id)}-${index}`}
                 idea={idea}
                 currentUser={currentUser}
+                canDeleteIdea={canDeleteIdea(idea)}
                 onRequireAuth={onRequireAuth}
                 onToggleLike={onToggleLike}
                 onLoadComments={onLoadComments}
                 onCreateComment={onCreateComment}
+                onDeleteIdea={onDeleteIdea}
               />
             ))}
           </div>

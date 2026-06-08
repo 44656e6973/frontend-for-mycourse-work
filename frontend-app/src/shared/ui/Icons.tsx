@@ -1,17 +1,11 @@
-import { type SVGProps } from 'react'
+import { type ImgHTMLAttributes, type SVGProps } from 'react'
 
 type IconProps = SVGProps<SVGSVGElement>
+type BrandIconProps = ImgHTMLAttributes<HTMLImageElement>
 
-export function BrandIcon(props: IconProps) {
+export function BrandIcon({ alt = '', ...props }: BrandIconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
-      <path
-        d="M12 3.75c-4.058 0-7.25 2.87-7.25 6.5 0 2.418 1.475 4.54 3.721 5.67v4.08c0 .69.793 1.08 1.34.659l3.44-2.657c.206-.159.46-.244.72-.244h1.03c4.058 0 7.25-2.87 7.25-6.508 0-3.63-3.192-6.5-7.25-6.5Z"
-        fill="currentColor"
-        fillOpacity="0.12"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.75h.008v.008H12V7.75ZM12 11v3.25" />
-    </svg>
+    <img src="/brandicon.png" alt={alt} draggable={false} {...props} />
   )
 }
 
@@ -57,6 +51,17 @@ export function CommentIcon(props: IconProps) {
         strokeLinejoin="round"
         d="M7.25 16.25H5.5A1.75 1.75 0 0 1 3.75 14.5v-7A1.75 1.75 0 0 1 5.5 5.75h13A1.75 1.75 0 0 1 20.25 7.5v7a1.75 1.75 0 0 1-1.75 1.75h-6.17l-3.5 2.75a.5.5 0 0 1-.8-.394v-2.356Z"
       />
+    </svg>
+  )
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" {...props}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.25h13.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9.25 7.25V5.75c0-.828.672-1.5 1.5-1.5h2.5c.828 0 1.5.672 1.5 1.5v1.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 7.25l-.7 10.86a2 2 0 0 1-1.996 1.89H9.446a2 2 0 0 1-1.996-1.89L6.75 7.25" />
+      <path strokeLinecap="round" d="M10.5 10.75v5.5M13.5 10.75v5.5" />
     </svg>
   )
 }

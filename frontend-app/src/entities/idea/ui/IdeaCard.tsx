@@ -1,16 +1,18 @@
 import { type FormEvent, useState } from 'react'
 
 import { type User } from '../../user'
-import { CommentIcon, HeartIcon } from '../../../shared/ui/Icons'
+import { CommentIcon, HeartIcon, TrashIcon } from '../../../shared/ui/Icons'
 import { type Idea, type IdeaComment } from '../model/types'
 
 type IdeaCardProps = {
   idea: Idea
   currentUser: User | null
+  canDeleteIdea: boolean
   onRequireAuth: () => void
   onToggleLike: (idea: Idea) => Promise<void>
   onLoadComments: (ideaId: string) => Promise<IdeaComment[]>
   onCreateComment: (ideaId: string, text: string) => Promise<IdeaComment>
+  onDeleteIdea: (idea: Idea) => Promise<void>
 }
 
 function getAuthorName(author: IdeaComment['author']) {
@@ -35,12 +37,15 @@ function formatCommentDate(date: string) {
 export function IdeaCard({
   idea,
   currentUser,
+  canDeleteIdea,
   onRequireAuth,
   onToggleLike,
   onLoadComments,
   onCreateComment,
+  onDeleteIdea,
 }: IdeaCardProps) {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [comments, setComments] = useState<IdeaComment[]>([])
   const [hasLoadedComments, setHasLoadedComments] = useState(false)
   const [commentText, setCommentText] = useState('')
@@ -49,6 +54,7 @@ export function IdeaCard({
   const [isLikePending, setIsLikePending] = useState(false)
   const [isCommentsLoading, setIsCommentsLoading] = useState(false)
   const [isCommentSubmitting, setIsCommentSubmitting] = useState(false)
+  const [isDeletePending, setIsDeletePending] = useState(false)
 
   const loadComments = async () => {
     setIsCommentsLoading(true)
@@ -124,6 +130,30 @@ export function IdeaCard({
       setActionError('Не удалось отправить комментарий')
     } finally {
       setIsCommentSubmitting(false)
+    }
+  }
+
+  const handleDeleteIdea = async () => {
+    if (!currentUser) {
+      setActionError('Войдите, чтобы удалить идею')
+      onRequireAuth()
+      return
+    }
+
+    if (!canDeleteIdea) {
+      setActionError('Можно удалить только свою идею')
+      return
+    }
+
+    setIsDeletePending(true)
+    setActionError(null)
+
+    try {
+      await onDeleteIdea(idea)
+    } catch {
+      setActionError('Не удалось удалить идею')
+      setIsDeletePending(false)
+      setIsDeleteConfirmOpen(false)
     }
   }
 
@@ -220,8 +250,48 @@ export function IdeaCard({
               <CommentIcon className="h-5 w-5" />
               {idea.comments}
             </button>
+
+            {canDeleteIdea ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setActionError(null)
+                  setIsDeleteConfirmOpen(true)
+                }}
+                disabled={isDeletePending}
+                className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <TrashIcon className="h-5 w-5" />
+                Удалить
+              </button>
+            ) : null}
           </div>
         </div>
+
+        {isDeleteConfirmOpen ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-medium text-red-700">Удалить эту идею без восстановления?</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isDeletePending}
+                className="inline-flex items-center justify-center rounded-2xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-500 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteIdea}
+                disabled={isDeletePending}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:bg-red-300"
+              >
+                <TrashIcon className="h-4 w-4" />
+                {isDeletePending ? 'Удаление...' : 'Удалить'}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {actionError ? (
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700">

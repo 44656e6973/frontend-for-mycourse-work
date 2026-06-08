@@ -188,7 +188,7 @@ function normalizeIdeaTags(apiTags: IdeaApiTag[] | undefined, fallbackTags: stri
 }
 
 function normalizeAuthor(apiAuthor: IdeaApiRecord['author'] | RawComment['author'], fallbackAuthor: User) {
-  if (typeof apiAuthor === 'string') {
+  if (typeof apiAuthor === 'string' || typeof apiAuthor === 'number') {
     return apiAuthor
   }
 
@@ -306,6 +306,12 @@ function getIdeaLikePaths(ideaId: string) {
 
 function getIdeaCommentsPaths(ideaId: string) {
   return ['/v1/ideas/{ideaId}/comments/', '/v1/comments/ideas/{ideaId}/'].map((path) =>
+    getFilledIdeaPath(path, ideaId),
+  )
+}
+
+function getIdeaDeletePaths(ideaId: string) {
+  return ['/v1/ideas/{ideaId}/', '/v1/ideas/{ideaId}'].map((path) =>
     getFilledIdeaPath(path, ideaId),
   )
 }
@@ -491,6 +497,35 @@ export const ideasApi = {
         localIdeaComments[ideaId] = [...(localIdeaComments[ideaId] ?? []), comment]
 
         return comment
+      } catch (error) {
+        lastError = error
+
+        if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    throw lastError
+  },
+  deleteIdea: async (ideaId: string): Promise<void> => {
+    if (!apiClient.isConfigured) {
+      await waitForLocalResponse()
+      delete localIdeaComments[ideaId]
+      localLikedIdeaIds.delete(ideaId)
+      return
+    }
+
+    let lastError: unknown = null
+
+    for (const deletePath of getIdeaDeletePaths(ideaId)) {
+      try {
+        await apiClient.delete<void>(deletePath)
+        delete localIdeaComments[ideaId]
+        localLikedIdeaIds.delete(ideaId)
+        return
       } catch (error) {
         lastError = error
 

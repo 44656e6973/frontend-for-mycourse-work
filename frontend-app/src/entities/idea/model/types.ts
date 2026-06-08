@@ -26,7 +26,7 @@ export type CreateIdeaPayload = {
 export type IdeaComment = {
   id: string
   ideaId: string
-  author: User | string
+  author: User | string | number
   text: string
   created_at: string
 }
@@ -38,7 +38,7 @@ export type Idea = {
   description: string
   category: IdeaCategory
   tags: string[]
-  author: User | string
+  author: User | string | number
   role: string
   likes: number
   comments: number
