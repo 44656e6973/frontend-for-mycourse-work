@@ -4,11 +4,11 @@ import { type User } from '../../../entities/user'
 import { SearchIcon, UserIcon } from '../../../shared/ui/Icons'
 
 type AppHeaderProps = {
-  titleQuery: string
+  searchQuery: string
   currentUser: User | null
   isCreateButtonVisible?: boolean
   isSearchVisible?: boolean
-  onTitleQueryChange: (value: string) => void
+  onSearchQueryChange: (value: string) => void
   onAuthClick: () => void
   onCreateIdeaClick: () => void
   onHomeClick: () => void
@@ -17,11 +17,11 @@ type AppHeaderProps = {
 }
 
 export function AppHeader({
-  titleQuery,
+  searchQuery,
   currentUser,
   isCreateButtonVisible = true,
   isSearchVisible = true,
-  onTitleQueryChange,
+  onSearchQueryChange,
   onAuthClick,
   onCreateIdeaClick,
   onHomeClick,
@@ -30,8 +30,8 @@ export function AppHeader({
 }: AppHeaderProps) {
   const userInitial = currentUser?.username.trim().charAt(0).toLocaleUpperCase('ru-RU')
 
-  const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onTitleQueryChange(event.target.value)
+  const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+    onSearchQueryChange(event.target.value)
   }
 
   return (
@@ -53,9 +53,9 @@ export function AppHeader({
             <SearchIcon className="h-5 w-5 shrink-0 text-slate-400" />
             <input
               type="search"
-              value={titleQuery}
-              onChange={handleTitleChange}
-              placeholder="Поиск по названию"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Поиск по названию или тегу"
               className="w-full border-none bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
             />
             </label>

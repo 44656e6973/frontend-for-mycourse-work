@@ -1,10 +1,9 @@
-import { type FilterCategory, type Idea } from './types'
+import { type Idea } from './types'
 
 type FilterIdeasOptions = {
   ideas: Idea[]
-  titleQuery: string
-  tagQuery: string
-  category: FilterCategory
+  searchQuery: string
+  selectedTag: string
 }
 
 const normalizeText = (value: string) =>
@@ -12,22 +11,21 @@ const normalizeText = (value: string) =>
 
 export function filterIdeas({
   ideas,
-  titleQuery,
-  tagQuery,
-  category,
+  searchQuery,
+  selectedTag,
 }: FilterIdeasOptions) {
-  const normalizedTitleQuery = normalizeText(titleQuery)
-  const normalizedTagQuery = normalizeText(tagQuery)
+  const normalizedSearchQuery = normalizeText(searchQuery)
+  const normalizedSelectedTag = normalizeText(selectedTag)
 
   return ideas.filter((idea) => {
-    const matchesCategory = category === 'Все' || idea.category === category
-    const matchesTitle =
-      normalizedTitleQuery.length === 0 ||
-      normalizeText(idea.title).includes(normalizedTitleQuery)
-    const matchesTag =
-      normalizedTagQuery.length === 0 ||
-      idea.tags.some((tag) => normalizeText(tag).includes(normalizedTagQuery))
+    const matchesSearch =
+      normalizedSearchQuery.length === 0 ||
+      normalizeText(idea.title).includes(normalizedSearchQuery) ||
+      idea.tags.some((tag) => normalizeText(tag).includes(normalizedSearchQuery))
+    const matchesSelectedTag =
+      normalizedSelectedTag.length === 0 ||
+      idea.tags.some((tag) => normalizeText(tag) === normalizedSelectedTag)
 
-    return matchesCategory && matchesTitle && matchesTag
+    return matchesSearch && matchesSelectedTag
   })
 }

@@ -9,7 +9,16 @@ import {
   type Tag,
 } from '../model/types'
 
-type IdeaApiTag = string | number | { id?: string | number; name?: string; title?: string }
+type IdeaApiTag =
+  | string
+  | number
+  | {
+      id?: string | number
+      name?: string
+      title?: string
+      label?: string
+      value?: string | number
+    }
 
 type RawComment = Partial<{
   id: string | number
@@ -25,7 +34,7 @@ type RawComment = Partial<{
   created: string
 }>
 
-type TagsApiResponse = IdeaApiTag[] | { results?: IdeaApiTag[]; data?: IdeaApiTag[] }
+type TagsApiResponse = IdeaApiTag[] | { results?: IdeaApiTag[]; data?: IdeaApiTag[]; tags?: IdeaApiTag[] }
 type IdeasApiResponse = IdeaApiRecord[] | { results?: IdeaApiRecord[]; data?: IdeaApiRecord[] }
 type CommentsApiResponse =
   | RawComment[]
@@ -75,6 +84,7 @@ type IdeaLikeState = {
 const FALLBACK_CATEGORY: IdeaCategory = 'UI/UX'
 const DEFAULT_CREATED_IDEA_STATUS = 'draft'
 const API_BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/$/, '') ?? ''
+const TAGS_PATHS = getTagsPaths()
 const localIdeaComments: Record<string, IdeaComment[]> = {}
 const localLikedIdeaIds = new Set<string>()
 
@@ -105,6 +115,22 @@ function getApiOrigin() {
   } catch {
     return window.location.origin
   }
+}
+
+function normalizeApiPath(path: string) {
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+function getTagsPaths() {
+  const paths = [
+    import.meta.env.VITE_TAGS_PATH,
+    '/v1/tags/',
+    '/v1/tags',
+    '/tags/',
+    '/tags',
+  ].filter((path): path is string => Boolean(path?.trim()))
+
+  return Array.from(new Set(paths.map((path) => normalizeApiPath(path.trim()))))
 }
 
 function normalizeMediaUrl(url: string | null | undefined) {
@@ -146,7 +172,7 @@ function normalizeTag(tag: IdeaApiTag): Tag {
     }
   }
 
-  const name = tag.name ?? tag.title ?? String(tag.id ?? '')
+  const name = tag.name ?? tag.title ?? tag.label ?? String(tag.value ?? tag.id ?? '')
 
   return {
     id: tag.id ?? name,
@@ -155,7 +181,7 @@ function normalizeTag(tag: IdeaApiTag): Tag {
 }
 
 function normalizeTagsResponse(response: TagsApiResponse): Tag[] {
-  const tags = Array.isArray(response) ? response : response.results ?? response.data ?? []
+  const tags = Array.isArray(response) ? response : response.results ?? response.data ?? response.tags ?? []
   const normalizedTags = tags.map(normalizeTag).filter((tag) => tag.name)
   const uniqueTagNames = new Set<string>()
 
@@ -181,7 +207,7 @@ function normalizeIdeaTags(apiTags: IdeaApiTag[] | undefined, fallbackTags: stri
       return String(tag)
     }
 
-    return tag.name ?? tag.title ?? String(tag.id ?? '')
+    return tag.name ?? tag.title ?? tag.label ?? String(tag.value ?? tag.id ?? '')
   })
 
   return (tags?.length ? tags : fallbackTags).filter(Boolean)
@@ -388,9 +414,25 @@ export const ideasApi = {
       return Promise.resolve(getLocalTags())
     }
 
-    const tags = await apiClient.get<TagsApiResponse>('/v1/tags/')
+    let lastError: unknown = null
 
-    return normalizeTagsResponse(tags)
+    for (const tagsPath of TAGS_PATHS) {
+      try {
+        const tags = await apiClient.get<TagsApiResponse>(tagsPath)
+
+        return normalizeTagsResponse(tags)
+      } catch (error) {
+        lastError = error
+
+        if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    throw lastError
   },
   getIdeaComments: async (ideaId: string): Promise<IdeaComment[]> => {
     if (!apiClient.isConfigured) {
