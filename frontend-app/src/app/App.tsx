@@ -9,6 +9,7 @@ import { FilterBar } from '../features/idea-filter'
 import { ProfilePage } from '../features/profile'
 import { AppHeader } from '../widgets/app-header'
 import { IdeaFeed } from '../widgets/idea-feed'
+import { ApiError } from '../shared/api/httpClient'
 import { AUTH_TOKENS_CHANGED_EVENT, tokenStorage } from '../shared/api/tokenStorage'
 
 const CREATE_IDEA_PATH = '/ideas/new'
@@ -39,10 +40,14 @@ function getPathForPage(page: AppPage) {
   }
 }
 
+function isProtectedPage(page: AppPage) {
+  return page === 'create-idea' || page === 'profile'
+}
+
 function getInitialRouteState() {
   const requestedPage = getPageFromLocation()
 
-  if (requestedPage === 'create-idea' || requestedPage === 'profile') {
+  if (isProtectedPage(requestedPage) && !tokenStorage.hasTokens()) {
     window.history.replaceState(null, '', getPathForPage('feed'))
 
     return {
@@ -84,6 +89,7 @@ function App() {
   const [isTagsLoading, setIsTagsLoading] = useState(true)
   const [tagsError, setTagsError] = useState<string | null>(null)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [isAuthHydrating, setIsAuthHydrating] = useState(() => tokenStorage.hasTokens())
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(initialRoute.shouldOpenAuthModal)
   const [currentPage, setCurrentPage] = useState<AppPage>(initialRoute.page)
   const [searchQuery, setSearchQuery] = useState('')
@@ -107,10 +113,67 @@ function App() {
   }, [])
 
   useEffect(() => {
+    let isMounted = true
+
+    if (!tokenStorage.hasTokens()) {
+      return () => {
+        isMounted = false
+      }
+    }
+
+    authApi
+      .getCurrentUser()
+      .then((storedUser) => {
+        if (!isMounted) {
+          return
+        }
+
+        if (!storedUser) {
+          authApi.forgetCurrentUser()
+          tokenStorage.clearTokens()
+          setCurrentUser(null)
+
+          if (isProtectedPage(getPageFromLocation())) {
+            navigateToPage('feed', 'replace')
+            setIsAuthModalOpen(true)
+          }
+
+          return
+        }
+
+        setCurrentUser(storedUser)
+        setIsAuthModalOpen(false)
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return
+        }
+
+        authApi.forgetCurrentUser()
+        tokenStorage.clearTokens()
+        setCurrentUser(null)
+
+        if (isProtectedPage(getPageFromLocation())) {
+          navigateToPage('feed', 'replace')
+          setIsAuthModalOpen(true)
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsAuthHydrating(false)
+        }
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [navigateToPage])
+
+  useEffect(() => {
     const handlePopState = () => {
       const requestedPage = getPageFromLocation()
 
-      if ((requestedPage === 'create-idea' || requestedPage === 'profile') && !currentUser) {
+      if (isProtectedPage(requestedPage) && !currentUser && !isAuthHydrating && !tokenStorage.hasTokens()) {
         navigateToPage('feed', 'replace')
         setIsAuthModalOpen(true)
         return
@@ -124,7 +187,7 @@ function App() {
     return () => {
       window.removeEventListener('popstate', handlePopState)
     }
-  }, [currentUser, navigateToPage])
+  }, [currentUser, isAuthHydrating, navigateToPage])
 
   useEffect(() => {
     const handleAuthTokensChanged = (event: Event) => {
@@ -134,9 +197,10 @@ function App() {
         return
       }
 
+      authApi.forgetCurrentUser()
       setCurrentUser(null)
 
-      if (getPageFromLocation() === 'create-idea' || getPageFromLocation() === 'profile') {
+      if (isProtectedPage(getPageFromLocation())) {
         navigateToPage('feed', 'replace')
       }
     }
@@ -246,7 +310,14 @@ function App() {
   }
 
   const handleProfileUpdate = (updatedUser: User) => {
+    authApi.rememberCurrentUser(updatedUser)
     setCurrentUser(updatedUser)
+  }
+
+  const handleAuthSuccess = (user: User) => {
+    authApi.rememberCurrentUser(user)
+    setCurrentUser(user)
+    setIsAuthHydrating(false)
   }
 
   const handleRequireAuth = () => {
@@ -259,7 +330,20 @@ function App() {
       throw new Error('Войдите, чтобы поставить лайк')
     }
 
-    const likeState = await ideasApi.toggleIdeaLike(idea, currentUser)
+    let likeState
+
+    try {
+      likeState = await ideasApi.toggleIdeaLike(idea, currentUser)
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        authApi.forgetCurrentUser()
+        tokenStorage.clearTokens()
+        setCurrentUser(null)
+        setIsAuthModalOpen(true)
+      }
+
+      throw error
+    }
 
     setIdeas((currentIdeas) =>
       currentIdeas.map((currentIdea) =>
@@ -331,15 +415,12 @@ function App() {
   }
 
   const handleLogout = async () => {
-    console.log('Starting logout...')
     try {
       await authApi.logout()
-      console.log('Logout API call successful')
-    } catch (error) {
-      console.error('Logout API error:', error)
+    } catch {
       // Даже если запрос ошибётся, очищаем токены локально
     } finally {
-      console.log('Clearing tokens and resetting user')
+      authApi.forgetCurrentUser()
       tokenStorage.clearTokens()
       setCurrentUser(null)
       navigateToPage('feed')
@@ -406,7 +487,7 @@ function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onAuthSuccess={setCurrentUser}
+        onAuthSuccess={handleAuthSuccess}
       />
     </div>
   )

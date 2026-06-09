@@ -10,6 +10,7 @@ import {
 } from '../model/types'
 
 const USER_PROFILE_PATHS = getUserProfilePaths()
+const CURRENT_USER_STORAGE_KEY = 'auth_current_user'
 
 type RawAuthResponse = Partial<AuthResponse> & {
   access?: string
@@ -35,8 +36,8 @@ function normalizeApiPath(path: string) {
 function getUserProfilePaths() {
   const paths = [
     import.meta.env.VITE_USER_PROFILE_PATH,
-    '/v1/auth/user/',
     '/v1/users/me/',
+    '/v1/auth/user/',
     '/v1/user/me/',
     '/v1/profile/',
   ].filter((path): path is string => Boolean(path?.trim()))
@@ -75,6 +76,46 @@ function normalizeUserResponse(response: unknown, fallbackUser: User): User {
     email: rawUser.email ?? fallbackUser.email,
     avatar_URL: rawUser.avatar_URL ?? rawUser.avatar_url ?? fallbackUser.avatar_URL ?? '',
     created_at: rawUser.created_at ?? fallbackUser.created_at,
+  }
+}
+
+function getFallbackCurrentUser(): User {
+  return {
+    id: 'current-user',
+    username: 'User',
+    email: '',
+    avatar_URL: '',
+    created_at: new Date().toISOString(),
+  }
+}
+
+function readStoredCurrentUser(): User | null {
+  try {
+    const rawUser = localStorage.getItem(CURRENT_USER_STORAGE_KEY)
+
+    if (!rawUser) {
+      return null
+    }
+
+    return normalizeUserResponse(JSON.parse(rawUser), getFallbackCurrentUser())
+  } catch {
+    return null
+  }
+}
+
+function persistCurrentUser(user: User) {
+  try {
+    localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user))
+  } catch {
+    return
+  }
+}
+
+function clearStoredCurrentUser() {
+  try {
+    localStorage.removeItem(CURRENT_USER_STORAGE_KEY)
+  } catch {
+    return
   }
 }
 
@@ -141,6 +182,49 @@ function normalizeAuthResponse(response: RawAuthResponse, fallbackUser: User): A
 }
 
 export const authApi = {
+  rememberCurrentUser: persistCurrentUser,
+  forgetCurrentUser: clearStoredCurrentUser,
+  getCurrentUser: async (): Promise<User | null> => {
+    if (!tokenStorage.hasTokens()) {
+      clearStoredCurrentUser()
+      return null
+    }
+
+    const storedUser = readStoredCurrentUser()
+
+    if (!apiClient.isConfigured) {
+      await waitForLocalResponse()
+      return storedUser
+    }
+
+    let lastError: unknown = null
+    const fallbackUser = storedUser ?? getFallbackCurrentUser()
+
+    for (const profilePath of USER_PROFILE_PATHS) {
+      try {
+        const response = await apiClient.get<unknown>(profilePath)
+        const currentUser = normalizeUserResponse(response, fallbackUser)
+
+        persistCurrentUser(currentUser)
+
+        return currentUser
+      } catch (error) {
+        lastError = error
+
+        if (error instanceof ApiError && (error.status === 404 || error.status === 405)) {
+          continue
+        }
+
+        throw error
+      }
+    }
+
+    if (storedUser && lastError instanceof ApiError && (lastError.status === 404 || lastError.status === 405)) {
+      return storedUser
+    }
+
+    throw lastError
+  },
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     const fallbackUser = createLocalUser(credentials.email)
 
@@ -179,12 +263,16 @@ export const authApi = {
     if (!apiClient.isConfigured) {
       await waitForLocalResponse()
 
-      return {
+      const updatedUser = {
         ...currentUser,
         username: normalizedPayload.username,
         email: normalizedPayload.email,
         avatar_URL: normalizedPayload.avatar_URL ?? '',
       }
+
+      persistCurrentUser(updatedUser)
+
+      return updatedUser
     }
 
     let lastError: unknown = null
@@ -193,7 +281,11 @@ export const authApi = {
       try {
         const response = await apiClient.patch<unknown>(profilePath, normalizedPayload)
 
-        return normalizeUserResponse(response, currentUser)
+        const updatedUser = normalizeUserResponse(response, currentUser)
+
+        persistCurrentUser(updatedUser)
+
+        return updatedUser
       } catch (error) {
         lastError = error
 
@@ -217,7 +309,14 @@ export const authApi = {
       return Promise.resolve()
     }
 
-    await apiClient.post<void>('/v1/auth/logout/', { refresh: tokens.refresh })
-    console.log('Logout response: success')
+    try {
+      await apiClient.post<void>('/v1/auth/logout/', { refresh: tokens.refresh })
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        return
+      }
+
+      throw error
+    }
   },
 }
