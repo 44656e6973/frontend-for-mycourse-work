@@ -17,15 +17,19 @@ export function filterIdeas({
   const normalizedSearchQuery = normalizeText(searchQuery)
   const normalizedSelectedTag = normalizeText(selectedTag)
 
-  return ideas.filter((idea) => {
-    const matchesSearch =
-      normalizedSearchQuery.length === 0 ||
-      normalizeText(idea.title).includes(normalizedSearchQuery) ||
-      idea.tags.some((tag) => normalizeText(tag).includes(normalizedSearchQuery))
-    const matchesSelectedTag =
-      normalizedSelectedTag.length === 0 ||
-      idea.tags.some((tag) => normalizeText(tag) === normalizedSelectedTag)
+  return ideas
+    .map((idea, index) => ({ idea, index }))
+    .filter(({ idea }) => {
+      const matchesSearch =
+        normalizedSearchQuery.length === 0 ||
+        normalizeText(idea.title).includes(normalizedSearchQuery) ||
+        idea.tags.some((tag) => normalizeText(tag).includes(normalizedSearchQuery))
+      const matchesSelectedTag =
+        normalizedSelectedTag.length === 0 ||
+        idea.tags.some((tag) => normalizeText(tag) === normalizedSelectedTag)
 
-    return matchesSearch && matchesSelectedTag
-  })
+      return matchesSearch && matchesSelectedTag
+    })
+    .sort((left, right) => right.idea.likes - left.idea.likes || left.index - right.index)
+    .map(({ idea }) => idea)
 }
